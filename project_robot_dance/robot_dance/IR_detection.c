@@ -1,6 +1,8 @@
 #include <ch.h>
-#include <sensors/proximity.h>
+#include "hal.h"
+//#include <sensors/proximity.h>
 #include <chprintf.h>
+#include "memory_protection.h"
 
 #include "choreography.h"
 
@@ -18,7 +20,7 @@ static THD_FUNCTION(ThdDetection, arg) {
 
     while(1){
         for (int i = 0; i < LED_IR_nb; i++){
-            prox[i] = get_prox(i);
+          //  prox[i] = get_prox(i);
         }
         debug_detection(3);
         time = chVTGetSystemTime();
@@ -32,8 +34,8 @@ static THD_FUNCTION(ThdDetection, arg) {
 * @return 0 if no error
 */
 int detection_init(){
-    proximity_start();
-    calibrate_ir();
+    //proximity_start();
+    //calibrate_ir();
     chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
     return 0;
 }
