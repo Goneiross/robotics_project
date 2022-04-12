@@ -12,6 +12,9 @@
 #include <camera/po8030.h>
 #include <chprintf.h>
 
+#include "IR_detection.h"
+#include "signals_processing.h"
+
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
