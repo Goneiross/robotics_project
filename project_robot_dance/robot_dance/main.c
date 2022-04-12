@@ -36,6 +36,7 @@ static void serial_start(void)
 
 int main(void)
 {
+	detection_init();
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
