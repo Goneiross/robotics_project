@@ -1,5 +1,6 @@
 #include <ch.h>
 #include "hal.h"
+#include <messagebus.h>
 //#include <sensors/proximity.h>
 #include <chprintf.h>
 #include "memory_protection.h"
@@ -7,6 +8,8 @@
 #include "choreography.h"
 
 #define LED_IR_nb 8
+
+extern messagebus_t bus;
 
 static int prox[8] = {0};
 
@@ -20,7 +23,7 @@ static THD_FUNCTION(ThdDetection, arg) {
 
     while(1){
         for (int i = 0; i < LED_IR_nb; i++){
-          //  prox[i] = get_prox(i);
+          prox[i] = get_prox(i);
         }
         debug_detection(3);
         time = chVTGetSystemTime();
@@ -34,8 +37,8 @@ static THD_FUNCTION(ThdDetection, arg) {
 * @return 0 if no error
 */
 int detection_init(){
-    //proximity_start();
-    //calibrate_ir();
+    proximity_start();
+    calibrate_ir();
     chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
     return 0;
 }
@@ -67,14 +70,14 @@ float get_obstacle_distance(){
 */
 void debug_detection(int level){
     if(level >= 1) {
-       // chprintf((BaseSequentialStream *)&SD3, "Debug level %d : \n", level); 
+       chprintf((BaseSequentialStream *)&SD3, "Debug level %d : \n", level); 
     } 
     if(level >= 2) {
     }
     if (level >= 3){
         for (int i = 0; i < LED_IR_nb; i++){
-            // chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d ", i, prox[i]);
+            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d ", i, prox[i]);
         }
-        // chprintf((BaseSequentialStream *)&SD3, "\n");
+        chprintf((BaseSequentialStream *)&SD3, "\n");
     }
 }

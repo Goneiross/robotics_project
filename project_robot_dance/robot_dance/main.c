@@ -8,8 +8,6 @@
 #include "memory_protection.h"
 #include <usbcfg.h>
 #include <main.h>
-#include <motors.h>
-#include <camera/po8030.h>
 #include <chprintf.h>
 
 #include "IR_detection.h"
@@ -36,10 +34,16 @@ static void serial_start(void)
 
 int main(void)
 {
+	/* System init */
+	halInit();
+	chSysInit();
+	serial_start();
 	detection_init();
-    /* Infinite loop. */
+	/* Bus init */
+	messagebus_init(&bus, &bus_lock, &bus_condvar);
+    
+	/* Main loop */
     while (1) {
-    	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
 }
