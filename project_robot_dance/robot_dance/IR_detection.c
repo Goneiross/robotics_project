@@ -40,8 +40,6 @@ static THD_FUNCTION(ThdDetection, arg) {
 
 /**
 * @brief Compute distance in mm from the obstacle if between threshlod. The threshold is used to remove unwanted data / noise
-*
-* @return nothing
 */
 void compute_distance(){
     for (int i = 0; i < LED_IR_nb; i++){
@@ -114,8 +112,6 @@ void update_obstacle_array(){
 * @brief chprintf data to debug
 *
 * @param level 0 none, 1 basics, 2 medium, 3 all
-*
-* @return nothing
 */
 void debug_detection(int level){
     if(level >= 1) {

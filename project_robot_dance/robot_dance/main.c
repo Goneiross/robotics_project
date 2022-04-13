@@ -12,6 +12,7 @@
 
 #include "IR_detection.h"
 #include "signals_processing.h"
+#include "choreography.h"
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
@@ -39,6 +40,7 @@ int main(void)
 	chSysInit();
 	serial_start();
 	detection_init();
+	choreography_init();
 	/* Bus init */
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
     
