@@ -18,7 +18,6 @@ extern messagebus_t bus;
 
 static int prox[8] = {0};
 static int obstacle_dist[8] = {0};
-static bool obstacle[8] = {false};
 
 static THD_WORKING_AREA(waThdDetection, 128);
 static THD_FUNCTION(ThdDetection, arg) {
@@ -77,6 +76,20 @@ void update_obstacle_array(bool *obstacle){
             obstacle[i] = true;
         }
     }
+}
+
+/**
+* @brief Returns true if there is an obstacle
+*
+* @return Bool true if obstacle
+*/
+void update_obstacle_array(){
+    for (int i = 0; i < LED_IR_nb; i++){
+        if (obstacle_dist[i] < THRESHOLD_DIST) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // /**
