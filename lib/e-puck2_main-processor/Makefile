@@ -101,8 +101,8 @@ endif
 #
 
 # Imported source files and paths
-CHIBIOS = $(GLOBAL_PATH)/ChibiOS/
-CHIBIOS_EXT = $(GLOBAL_PATH)/ChibiOS_ext/
+CHIBIOS = $(GLOBAL_PATH)/ChibiOS
+CHIBIOS_EXT = $(GLOBAL_PATH)/ChibiOS_ext
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
 # HAL-OSAL files.
