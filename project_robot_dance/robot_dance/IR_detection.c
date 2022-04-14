@@ -1,7 +1,7 @@
 #include <ch.h>
-#include "hal.h"
-#include <messagebus.h>
-//#include <sensors/proximity.h>
+#include <hal.h>
+//#include <messagebus.h>
+#include <sensors/proximity.h>
 #include <chprintf.h>
 #include "memory_protection.h"
 
@@ -14,7 +14,7 @@
 #define THRESHOLD_DIST 80  
 #define FACTOR 0.01 // MODIFIER CA !!!
 
-extern messagebus_t bus;
+//extern messagebus_t bus;
 
 static int prox[8] = {0};
 static int obstacle_dist[8] = {0};
@@ -57,8 +57,13 @@ void compute_distance(){
 */
 int detection_init(){
     proximity_start();
-    calibrate_ir();
-    chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
+    //get_prox(0);
+    //while(1){
+    	//get_prox(0);
+    	//chprintf((BaseSequentialStream *)&SD3, "Debug level /n");
+    //}
+    //calibrate_ir();
+    //chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
     return 0;
 }
 
@@ -81,7 +86,7 @@ void update_obstacle_array(bool *obstacle){
 *
 * @return Bool true if obstacle
 */
-void update_obstacle_array(){
+void is_obstacle(){
     for (int i = 0; i < LED_IR_nb; i++){
         if (obstacle_dist[i] < THRESHOLD_DIST) {
             return true;
