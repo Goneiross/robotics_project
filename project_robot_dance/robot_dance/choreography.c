@@ -162,29 +162,36 @@ static THD_FUNCTION(ThdLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_led_args *led_info = arg;
-    static stm32_gpio_t* gpio;
+    stm32_gpio_t* gpio;
+    int led;
     if (led_info->led == "LED1"){
         gpio = GPIOD;
+        led = GPIOD_LED1;
     } else if (led_info->led == "LED3"){
         gpio = GPIOD;
+        led = GPIOD_LED3;
     } else if (led_info->led == "LED5"){
         gpio = GPIOD;
+        led = GPIOD_LED5;
     } else if (led_info->led == "LED7"){
         gpio = GPIOD;
+        led = GPIOD_LED7;
     } else if (led_info->led == "FRONT_LED"){
         gpio = GPIOD;
+        led = GPIOD_LED_FRONT;
     } else if (led_info->led == "BODY_LED"){
         gpio = GPIOB;
+        led = GPIOB_LED_BODY;
     } else {
         // PANIC TO DO
     }
-    palWritePad(gpio, led_info->led, 0); // First set on of the LED, should it be first off ? TO DO
+    palWritePad(gpio, led, 0); // First set on of the LED, should it be first off ? TO DO
     for (int i = 0; i < led_info->iterations; i ++){ // int i or static int i ?? TO DO
-        //palTogglePad(gpio, led_info->led);
+        //palTogglePad(gpio, led);
         chThdSleepMilliseconds(led_info->delay_on);
-        palWritePad(gpio, led_info->led, 1); 
+        palWritePad(gpio, led, 1); 
         chThdSleepMilliseconds(led_info->delay_off);
-        palWritePad(gpio, led_info->led, 0); 
+        palWritePad(gpio, led, 0); 
     }
     chThdExit(0);
 }
