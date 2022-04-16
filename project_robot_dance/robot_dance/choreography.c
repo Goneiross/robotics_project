@@ -1,6 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <stdint.h>
 #include <ch.h>
-#include <string>
 
 #include "IR_detection.h"
 #include "signals_processing.h"
@@ -13,11 +15,26 @@
 
 typedef struct thd_led_args
 {
-    string led;
+    char led[20];
     int iterations;
     int delay_on;
     int delay_off;
 } thd_led_args;
+
+
+int choose_move();
+void move(int move_chosen);
+void escape_obstacle();
+void move_forward();
+void move_backward();
+void full_rotation(uint8_t iterations);
+void turn_around();
+void blink_LED1(int iterations, int delay_on, int delay_off);
+void blink_LED3(int iterations, int delay_on, int delay_off);
+void blink_LED5(int iterations, int delay_on, int delay_off);
+void blink_LED7(int iterations, int delay_on, int delay_off);
+void blink_LED_FRONT(int iterations, int delay_on, int delay_off);
+void blink_LED_BODY(int iterations, int delay_on, int delay_off);
 
 
 static bool obstacle[8] = {false};
@@ -145,7 +162,7 @@ static THD_FUNCTION(ThdLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_led_args *led_info = arg;
-    static GPIO_TypeDef gpio = "";
+    static stm32_gpio_t* gpio;
     if (led_info->led == "LED1"){
         gpio = GPIOD;
     } else if (led_info->led == "LED3"){
@@ -169,7 +186,7 @@ static THD_FUNCTION(ThdLed, arg) {
         chThdSleepMilliseconds(led_info->delay_off);
         palWritePad(gpio, led_info->led, 0); 
     }
-    chThdExit();
+    chThdExit(0);
 }
 
 /**
@@ -184,7 +201,7 @@ void blink_LED1(int iterations, int delay_on, int delay_off){
                             .led = "LED1",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
 
@@ -200,7 +217,7 @@ void blink_LED3(int iterations, int delay_on, int delay_off){
                             .led = "LED3",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
 
@@ -216,7 +233,7 @@ void blink_LED5(int iterations, int delay_on, int delay_off){
                             .led = "LED5",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
 
@@ -232,7 +249,7 @@ void blink_LED7(int iterations, int delay_on, int delay_off){
                             .led = "LED7",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
 
@@ -248,7 +265,7 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
                             .led = "FRONT_LED",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
 
@@ -264,6 +281,6 @@ void blink_LED_BODY(int iterations, int delay_on, int delay_off){
                             .led = "BODY_LED",
                             .iterations = iterations,
                             .delay_on = delay_on,
-                            .delay_off = delay_off}
+                            .delay_off = delay_off};
     chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
 }
