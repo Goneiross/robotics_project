@@ -19,7 +19,7 @@
 static int prox[8] = {0};
 static int obstacle_dist[8] = {0};
 
-static THD_WORKING_AREA(waThdDetection, 128);
+static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
 
     chRegSetThreadName(__FUNCTION__);
