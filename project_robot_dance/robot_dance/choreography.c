@@ -193,7 +193,12 @@ void turn_around(){
 }
 
 // SI fonctionne pas cf https://www.chibios.org/dokuwiki/doku.php?id=chibios:documentation:books:rt:kernel_threading TO DO
-static THD_WORKING_AREA(waThdLed, 256);
+static THD_WORKING_AREA(waThdLedLED1, 256);
+static THD_WORKING_AREA(waThdLedLED3, 256);
+static THD_WORKING_AREA(waThdLedLED5, 256);
+static THD_WORKING_AREA(waThdLedLED7, 256);
+static THD_WORKING_AREA(waThdLedFRONT_LED, 256);
+static THD_WORKING_AREA(waThdLedBODY_LED, 256);
 static THD_FUNCTION(ThdLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -245,7 +250,7 @@ void blink_LED1(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedLED1, sizeof(waThdLedLED1), NORMALPRIO, ThdLed, &th_args);
 }
 
 /**
@@ -261,7 +266,7 @@ void blink_LED3(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedLED3, sizeof(waThdLedLED3), NORMALPRIO, ThdLed, &th_args);
 }
 
 /**
@@ -277,7 +282,7 @@ void blink_LED5(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedLED5, sizeof(waThdLedLED5), NORMALPRIO, ThdLed, &th_args);
 }
 
 /**
@@ -293,7 +298,7 @@ void blink_LED7(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedLED7, sizeof(waThdLedLED7), NORMALPRIO, ThdLed, &th_args);
 }
 
 /**
@@ -309,7 +314,7 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedFRONT_LED, sizeof(waThdLedFRONT_LED), NORMALPRIO, ThdLed, &th_args);
 }
 
 /**
@@ -325,5 +330,5 @@ void blink_LED_BODY(int iterations, int delay_on, int delay_off){
                             .iterations = iterations,
                             .delay_on = delay_on,
                             .delay_off = delay_off};
-    chThdCreateStatic(waThdLed, sizeof(waThdLed), NORMALPRIO, ThdLed, &th_args);
+    chThdCreateStatic(waThdLedBODY_LED, sizeof(waThdLedBODY_LED), NORMALPRIO, ThdLed, &th_args);
 }
