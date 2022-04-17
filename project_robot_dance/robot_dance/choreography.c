@@ -12,6 +12,12 @@
 #define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 1
 #define DEFAULT_ROTATION_ITERATION 1
+#define DEFAULT_MOVE_TIME_S 3
+#define MOTOR_MAX_SPEED 2200
+#define MOTOR_HIGH_SPEED 1800
+#define MOTOR_MEDIUM_SPEED 1100
+#define MOTOR_LOW_SPEED 500
+#define MOTOR_TURTLE_SPEED 100
 
 typedef struct thd_led_args
 {
@@ -21,13 +27,21 @@ typedef struct thd_led_args
     int delay_off;
 } thd_led_args;
 
+typedef struct thd_motor_args
+{
+    uint8_t time_s;
+    uint16_t speed_left;
+    uint16_t speed_right;
+} thd_motor_args;
+
+
 
 int choose_move();
 void move(int move_chosen);
 void escape_obstacle();
-void move_forward();
-void move_backward();
-void full_rotation(uint8_t iterations);
+void move_forward(uint8_t time_s, uint16_t speed);
+void move_backward(uint8_t time_s, uint16_t speed);
+void full_rotation(uint8_t iterations, uint16_t speed);
 void turn_around();
 void blink_LED1(int iterations, int delay_on, int delay_off);
 void blink_LED3(int iterations, int delay_on, int delay_off);
@@ -86,12 +100,12 @@ void move(int move_chosen){
         escape_obstacle();
         break;
     case 1:
-        move_forward();
+        move_forward(DEFAULT_MOVE_TIME_S, MOTOR_MEDIUM_SPEED);
     case 2:
-        move_backward();
+        move_backward(DEFAULT_MOVE_TIME_S, MOTOR_MEDIUM_SPEED);
         break;
     case 3:
-        full_rotation(DEFAULT_ROTATION_ITERATION);
+        full_rotation(DEFAULT_ROTATION_ITERATION, MOTOR_MEDIUM_SPEED);
         break;
     case 4:
         turn_around();
@@ -119,6 +133,20 @@ void move(int move_chosen){
     }
 }
 
+// What to do if new thread started ????? TO DO
+static THD_WORKING_AREA(waThdMotor, 256);
+static THD_FUNCTION(ThdMotor, arg) {
+    chRegSetThreadName(__FUNCTION__);
+    (void)arg;
+    thd_motor_args *motor_info = arg;
+    right_motor_set_speed(motor_info->speed_right);
+    right_motor_set_speed(motor_info->speed_left);
+    chThdSleepMilliseconds((motor_info->time_s) * 1000);
+    right_motor_set_speed(0);
+    right_motor_set_speed(0);
+    chThdExit(0);
+}
+
 /**
 * @brief Try to escape the nearest obstacle
 */
@@ -129,15 +157,23 @@ void escape_obstacle(){
 /**
 * @brief Move the epuck forward
 */
-void move_forward(){
-
+void move_forward(uint8_t time_s, uint16_t speed){
+    thd_motor_args th_args = {
+                            .time_s = time_s,
+                            .speed_left = speed,
+                            .speed_right = speed};
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &th_args);
 }
 
 /**
 * @brief Move the epuck backward
 */
-void move_backward(){
-
+void move_backward(uint8_t time_s, uint16_t speed){
+    thd_motor_args th_args = {
+                            .time_s = time_s,
+                            .speed_left = - speed,
+                            .speed_right = - speed};
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &th_args);
 }
 
 /**
@@ -145,19 +181,19 @@ void move_backward(){
 *
 * @param iterations number of iterations to execute 
 */
-void full_rotation(uint8_t iterations){
-
+void full_rotation(uint8_t iterations, uint16_t speed){
+    // TO DO
 }
 
 /**
 * @brief Make the epuck turn around
 */
 void turn_around(){
-
+    // TO DO
 }
 
 // SI fonctionne pas cf https://www.chibios.org/dokuwiki/doku.php?id=chibios:documentation:books:rt:kernel_threading TO DO
-static THD_WORKING_AREA(waThdLed, 128);
+static THD_WORKING_AREA(waThdLed, 256);
 static THD_FUNCTION(ThdLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
