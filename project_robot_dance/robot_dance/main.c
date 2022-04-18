@@ -2,25 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+//#include <messagebus.h>
 
-#include "ch.h"
-#include "hal.h"
+#include <ch.h>
+#include <hal.h>
 #include "memory_protection.h"
-#include <usbcfg.h>
 #include <main.h>
-#include <motors.h>
-#include <camera/po8030.h>
 #include <chprintf.h>
+#include <usbcfg.h>
+#include <motors.h>
 
 #include "IR_detection.h"
 #include "signals_processing.h"
+#include "choreography.h"
 
-void SendUint8ToComputer(uint8_t* data, uint16_t size) 
-{
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)&size, sizeof(uint16_t));
-	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)data, size);
-}
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
+
+
 
 static void serial_start(void)
 {
@@ -36,10 +36,21 @@ static void serial_start(void)
 
 int main(void)
 {
+	/* System init */
+	halInit();
+	chSysInit();
+	serial_start();
+	motors_init();
+
 	detection_init();
-    /* Infinite loop. */
+	choreography_init();
+	/* Bus init */
+
+	messagebus_init(&bus, &bus_lock, &bus_condvar);
+
+	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
+	/* Main loop */
     while (1) {
-    	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
 }
