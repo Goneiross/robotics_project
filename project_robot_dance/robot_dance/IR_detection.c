@@ -11,7 +11,7 @@
 #define LED_IR_nb 8
 #define THRESHOLD_PROX_MIN 10 // MODIFIER CA !!! 
 #define THRESHOLD_PROX_MAX 1000 // MODIFIER CA !!! 
-#define THRESHOLD_DIST 80  
+#define THRESHOLD_DIST 80
 #define FACTOR 0.01 // MODIFIER CA !!!
 
 //extern messagebus_t bus;
@@ -82,12 +82,12 @@ void update_obstacle_array(bool *obstacle){
 *
 * @return Bool true if obstacle
 */
-void is_obstacle(){
-    for (int i = 0; i < LED_IR_nb; i++){
+bool is_obstacle(){
+    /*for (int i = 0; i < LED_IR_nb; i++){
         if (obstacle_dist[i] < THRESHOLD_DIST) {
             return true;
         }
-    }
+    }*/
     return false;
 }
 
