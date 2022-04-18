@@ -27,6 +27,8 @@ static THD_FUNCTION(ThdDetection, arg) {
 
     systime_t time;
 
+    calibrate_ir();
+
     while(1){
         for (int i = 0; i < LED_IR_nb; i++){
           prox[i] = get_prox(i);
@@ -57,13 +59,7 @@ void compute_distance(){
 */
 int detection_init(){
     proximity_start();
-    //get_prox(0);
-    //while(1){
-    	//get_prox(0);
-    	//chprintf((BaseSequentialStream *)&SD3, "Debug level /n");
-    //}
-    //calibrate_ir();
-    //chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
+    chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
     return 0;
 }
 
