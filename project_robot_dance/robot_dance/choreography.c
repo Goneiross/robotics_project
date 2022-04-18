@@ -23,7 +23,7 @@
 
 typedef struct thd_led_args
 {
-    char led[20];
+    int led;
     int iterations;
     int delay_on;
     int delay_off;
@@ -203,27 +203,11 @@ static THD_FUNCTION(ThdLed, arg) {
     (void)arg;
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
-    int led;
-    if (led_info->led == "LED1"){
-        gpio = GPIOD;
-        led = GPIOD_LED1;
-    } else if (led_info->led == "LED3"){
-        gpio = GPIOD;
-        led = GPIOD_LED3;
-    } else if (led_info->led == "LED5"){
-        gpio = GPIOD;
-        led = GPIOD_LED5;
-    } else if (led_info->led == "LED7"){
-        gpio = GPIOD;
-        led = GPIOD_LED7;
-    } else if (led_info->led == "FRONT_LED"){
-        gpio = GPIOD;
-        led = GPIOD_LED_FRONT;
-    } else if (led_info->led == "BODY_LED"){
+    int led = led_info->led;
+    if (led_info->led == GPIOB_LED_BODY){
         gpio = GPIOB;
-        led = GPIOB_LED_BODY;
     } else {
-        // PANIC TO DO
+        gpio = GPIOD;
     }
     palWritePad(gpio, led, 0); // First set on of the LED, should it be first off ? TO DO
     for (int i = 0; i < led_info->iterations; i ++){ // int i or static int i ?? TO DO
@@ -245,7 +229,7 @@ static THD_FUNCTION(ThdLed, arg) {
 */
 void blink_LED1(int iterations, int delay_on, int delay_off){
     static thd_led_args led_args;
-    //led_args.led = "LED1";
+    led_args.led = GPIOD_LED1;
     led_args.iterations = iterations;
     led_args.delay_on = delay_on;
     led_args.delay_off = delay_off;
@@ -260,12 +244,12 @@ void blink_LED1(int iterations, int delay_on, int delay_off){
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED3(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "LED3",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedLED3, sizeof(waThdLedLED3), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    led_args.led = GPIOD_LED3;
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedLED3, sizeof(waThdLedLED3), NORMALPRIO, ThdLed, &led_args);
 }
 
 /**
@@ -276,12 +260,12 @@ void blink_LED3(int iterations, int delay_on, int delay_off){
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED5(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "LED5",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedLED5, sizeof(waThdLedLED5), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    led_args.led = GPIOD_LED5;
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedLED5, sizeof(waThdLedLED5), NORMALPRIO, ThdLed, &led_args);
 }
 
 /**
@@ -292,12 +276,12 @@ void blink_LED5(int iterations, int delay_on, int delay_off){
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED7(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "LED7",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedLED7, sizeof(waThdLedLED7), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    led_args.led = GPIOD_LED7;
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedLED7, sizeof(waThdLedLED7), NORMALPRIO, ThdLed, &led_args);
 }
 
 /**
@@ -308,12 +292,12 @@ void blink_LED7(int iterations, int delay_on, int delay_off){
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "FRONT_LED",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedFRONT_LED, sizeof(waThdLedFRONT_LED), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    led_args.led = GPIOD_LED_FRONT;
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedFRONT_LED, sizeof(waThdLedFRONT_LED), NORMALPRIO, ThdLed, &led_args);
 }
 
 /**
@@ -324,10 +308,10 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED_BODY(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "BODY_LED",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedBODY_LED, sizeof(waThdLedBODY_LED), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    led_args.led = GPIOB_LED_BODY;
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedBODY_LED, sizeof(waThdLedBODY_LED), NORMALPRIO, ThdLed, &led_args);
 }
