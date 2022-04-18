@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <ch.h>
 
+#include <chprintf.h>
+
 #include "IR_detection.h"
 #include "signals_processing.h"
 
@@ -34,8 +36,6 @@ typedef struct thd_motor_args
     uint16_t speed_right;
 } thd_motor_args;
 
-
-
 int choose_move();
 void move(int move_chosen);
 void escape_obstacle();
@@ -50,8 +50,8 @@ void blink_LED7(int iterations, int delay_on, int delay_off);
 void blink_LED_FRONT(int iterations, int delay_on, int delay_off);
 void blink_LED_BODY(int iterations, int delay_on, int delay_off);
 
-
 static bool obstacle[8] = {false};
+static thd_motor_args motor_args;
 
 static THD_WORKING_AREA(waThdDance, 128);
 static THD_FUNCTION(ThdDance, arg) {
@@ -139,11 +139,12 @@ static THD_FUNCTION(ThdMotor, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_args *motor_info = arg;
+    chprintf((BaseSequentialStream *)&SD3, "time: %d speed_right: %d speed_left: %d \n", motor_info->time_s, motor_info->speed_right, motor_info->speed_left);
     right_motor_set_speed(motor_info->speed_right);
-    right_motor_set_speed(motor_info->speed_left);
+    left_motor_set_speed(motor_info->speed_left);
     chThdSleepMilliseconds((motor_info->time_s) * 1000);
     right_motor_set_speed(0);
-    right_motor_set_speed(0);
+    left_motor_set_speed(0);
     chThdExit(0);
 }
 
@@ -158,22 +159,20 @@ void escape_obstacle(){
 * @brief Move the epuck forward
 */
 void move_forward(uint8_t time_s, uint16_t speed){
-    thd_motor_args th_args = {
-                            .time_s = time_s,
-                            .speed_left = speed,
-                            .speed_right = speed};
-    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &th_args);
+	motor_args.time_s = time_s;
+	motor_args.speed_left = speed;
+	motor_args.speed_right = speed;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
 * @brief Move the epuck backward
 */
 void move_backward(uint8_t time_s, uint16_t speed){
-    thd_motor_args th_args = {
-                            .time_s = time_s,
-                            .speed_left = - speed,
-                            .speed_right = - speed};
-    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &th_args);
+	motor_args.time_s = time_s;
+	motor_args.speed_left = -speed;
+	motor_args.speed_right = -speed;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
@@ -245,12 +244,12 @@ static THD_FUNCTION(ThdLed, arg) {
 * @param delay_off Number of ms to set the LED off
 */
 void blink_LED1(int iterations, int delay_on, int delay_off){
-    thd_led_args th_args = {
-                            .led = "LED1",
-                            .iterations = iterations,
-                            .delay_on = delay_on,
-                            .delay_off = delay_off};
-    chThdCreateStatic(waThdLedLED1, sizeof(waThdLedLED1), NORMALPRIO, ThdLed, &th_args);
+    static thd_led_args led_args;
+    //led_args.led = "LED1";
+    led_args.iterations = iterations;
+    led_args.delay_on = delay_on;
+    led_args.delay_off = delay_off;
+    chThdCreateStatic(waThdLedLED1, sizeof(waThdLedLED1), NORMALPRIO, ThdLed, &led_args);
 }
 
 /**

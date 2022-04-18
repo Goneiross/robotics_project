@@ -10,6 +10,7 @@
 #include <main.h>
 #include <chprintf.h>
 #include <usbcfg.h>
+#include <motors.h>
 
 #include "IR_detection.h"
 #include "signals_processing.h"
@@ -39,9 +40,12 @@ int main(void)
 	halInit();
 	chSysInit();
 	serial_start();
+	motors_init();
+
 	detection_init();
-	//choreography_init();
+	choreography_init();
 	/* Bus init */
+
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
 
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
