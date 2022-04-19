@@ -53,9 +53,14 @@ int main(void)
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
 	/* Main loop */
 
-	wait_send_to_computer();
-	arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
-	SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+	signals_processing_init();
+	chprintf((BaseSequentialStream *)&SD3, "etape 1 \n");
+	while(1){
+		wait_send_to_computer();
+		chprintf((BaseSequentialStream *)&SD3, "etape 2 \n");
+		arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
+		SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+	}
 	while (1) {
 		chThdSleepMilliseconds(1000);
 	}
