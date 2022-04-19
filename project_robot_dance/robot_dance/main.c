@@ -19,6 +19,7 @@
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
+static float send_tab[CHUNK_SIZE];
 
 
 
@@ -40,6 +41,7 @@ int main(void)
 	halInit();
 	chSysInit();
 	serial_start();
+	usb_start();
 	motors_init();
 
 	detection_init();
@@ -50,10 +52,22 @@ int main(void)
 
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
 	/* Main loop */
-    while (1) {
-        chThdSleepMilliseconds(1000);
-    }
+
+	wait_send_to_computer();
+	arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
+	SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+	while (1) {
+		chThdSleepMilliseconds(1000);
+	}
 }
+
+void SendFloatToComputer(BaseSequentialStream* out, float* data, uint16_t size)
+{
+	chSequentialStreamWrite(out, (uint8_t*)"START", 5);
+	chSequentialStreamWrite(out, (uint8_t*)&size, sizeof(uint16_t));
+	chSequentialStreamWrite(out, (uint8_t*)data, sizeof(float) * size);
+}
+
 
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
