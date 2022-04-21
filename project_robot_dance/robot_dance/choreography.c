@@ -6,7 +6,10 @@
 #include <time.h>
 
 #include <chprintf.h>
+#include <leds.h>
+#include <motors.h>
 
+#include "choreography.h"
 #include "IR_detection.h"
 #include "signals_processing.h"
 
@@ -35,14 +38,6 @@
 #define PITCH_3 630
 #define PITCH_4 1300
 #define PITCH_5 2500
-
-typedef enum {
-	LED2,
-	LED4,
-	LED6,
-	LED8,
-	NUM_RGB_LED,
-} rgb_led_name_t;
 
 typedef enum {
 	FOLLOW_PITCH,
@@ -91,14 +86,14 @@ void blink_LED7(int iterations, int delay_on, int delay_off);
 void blink_LED_BODY(int iterations, int delay_on, int delay_off);
 void blink_LED_FRONT(int iterations, int delay_on, int delay_off);
 void choose_and_set_RGB(rgb_led_name_t led_number);
-int choose_move();
-void escape_obstacle();
-void full_rotation(uint8_t iterations, uint16_t speed);
+int choose_move(void);
+void escape_obstacle(void);
+void full_rotation(void);
 void move(int move_chosen);
 void move_backward(uint8_t time_s, uint16_t speed);
 void move_forward(uint8_t time_s, uint16_t speed);
-void start_leds();
-void turn_around();
+void start_leds(void);
+void turn_around(void);
 
 
 static THD_WORKING_AREA(waThdDance, 256);
@@ -401,8 +396,8 @@ int choose_move(){
 	if (is_obstacle() == true){
         return 0;
     } else {
-        uint16_t tempo = get_music_tempo();
-        uint16_t pitch = get_music_pitch();
+        // uint16_t tempo = get_music_tempo();
+        // uint16_t pitch = get_music_pitch();
     	uint8_t random = 1 + rand() % (MOVE_NB - 1);
     	//chprintf((BaseSequentialStream *)&SD3, " random: %d \n", random);
         return (random);
@@ -432,7 +427,7 @@ void escape_obstacle(){
 *
 * @param iterations number of iterations to execute 
 */
-void full_rotation(uint8_t iterations, uint16_t speed){
+void full_rotation(){
     // TO DO
 }
 
@@ -454,7 +449,7 @@ void move(int move_chosen){
         move_backward(DEFAULT_MOVE_TIME_S, MOTOR_MEDIUM_SPEED);
         break;
     case 3:
-        full_rotation(DEFAULT_ROTATION_ITERATION, MOTOR_MEDIUM_SPEED);
+        full_rotation();
         break;
     case 4:
         turn_around();
