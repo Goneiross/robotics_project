@@ -10,7 +10,7 @@
 #include "IR_detection.h"
 #include "signals_processing.h"
 
-#define MOVE_NB 10
+#define MOVE_NB 4
 #define DEFAULT_BLINK_DELAY_ON 500
 #define DEFAULT_BLINK_DELAY_OFF 500
 #define DEFAULT_BLINK_ITERATION 10
