@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <ch.h>
 #include <hal.h>
 //#include <messagebus.h>
@@ -60,6 +63,8 @@ void compute_distance(){
 int detection_init(){
     proximity_start();
     chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
+    unsigned int rand_seed = get_prox(0)*get_prox(1)*get_prox(2)*get_prox(3)*get_prox(4)*get_prox(5)*get_prox(6)*get_prox(7);
+    srand(rand_seed); 
     return 0;
 }
 
