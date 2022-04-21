@@ -22,6 +22,28 @@
 #define MOTOR_LOW_SPEED 500
 #define MOTOR_TURTLE_SPEED 100
 
+#define TEMPO_0 60
+#define TEMPO_1 80
+#define TEMPO_2 100
+#define TEMPO_3 120
+#define TEMPO_4 140
+#define TEMPO_5 160
+
+#define PITCH_0 80
+#define PITCH_1 160
+#define PITCH_2 320
+#define PITCH_3 630
+#define PITCH_4 1300
+#define PITCH_5 2500
+
+typedef enum {
+	LED2,
+	LED4,
+	LED6,
+	LED8,
+	NUM_RGB_LED,
+} rgb_led_name_t;
+
 typedef struct thd_led_args
 {
     int led;
@@ -82,6 +104,25 @@ int choreography_init(){
     return 0;
 }
 
+int choose_and_set_RGB(rgb_led_name_t led_number){
+    uint16_t pitch = get_music_pitch();
+    if (pitch < PITCH_0 ) {
+        set_rgb_led(led_number, 255, 0 , 0);
+    } else if (pitch < PITCH_1) {
+        set_rgb_led(led_number, 255, 127, 0);
+    } else if (pitch < PITCH_2) {
+        set_rgb_led(led_number, 255, 255, 0);
+    } else if (pitch < PITCH_3) {
+        set_rgb_led(led_number, 0, 255, 0);
+    } else if (pitch < PITCH_4) {
+        set_rgb_led(led_number, 0, 0, 255);
+    } else if (pitch < PITCH_5) {
+        set_rgb_led(led_number, 75, 0, 130);
+    } else {
+        set_rgb_led(led_number, 148, 0, 211);
+    }  
+}
+
 /**
 * @brief Choose the move to execute
 *
@@ -91,6 +132,8 @@ int choose_move(){
 	if (is_obstacle() == true){
         return 0;
     } else {
+        uint16_t tempo = get_music_tempo();
+        uint16_t pitch = get_music_pitch();
     	uint8_t random = 1 + rand() % (MOVE_NB - 1);
     	//chprintf((BaseSequentialStream *)&SD3, " random: %d \n", random);
         return (random);
