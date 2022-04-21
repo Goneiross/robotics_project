@@ -44,6 +44,18 @@ typedef enum {
 	NUM_RGB_LED,
 } rgb_led_name_t;
 
+typedef enum {
+	FOLLOW_PITCH,
+    MANUAL,
+} led_play_type;
+
+typedef struct rgb
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} rgb;
+
 typedef struct thd_led_args
 {
     int led;
@@ -51,6 +63,16 @@ typedef struct thd_led_args
     int delay_on;
     int delay_off;
 } thd_led_args;
+
+typedef struct thd_rgb_led_args
+{
+    rgb_led_name_t led;
+    int iterations;
+    int delay_on;
+    int delay_off;
+    rgb colour;
+    led_play_type led_play_type;
+} thd_rgb_led_args;
 
 typedef struct thd_motor_args
 {
@@ -93,6 +115,13 @@ static THD_FUNCTION(ThdDance, arg) {
     }
 }
 
+void start_leds(){
+    blink_LED2(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED4(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED6(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED8(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+}
+
 /**
 * @brief Initializes the choreography
 *
@@ -100,7 +129,7 @@ static THD_FUNCTION(ThdDance, arg) {
 */
 int choreography_init(){
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-
+    start_leds();
     return 0;
 }
 
@@ -162,24 +191,6 @@ void move(int move_chosen){
         break;
     case 4:
         turn_around();
-        break;
-    case 5:
-        blink_LED1(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
-        break;
-    case 6:
-        blink_LED3(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
-        break;
-    case 7:
-        blink_LED5(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
-        break;
-    case 8:
-        blink_LED7(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
-        break;
-    case 9:
-        blink_LED_FRONT(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
-        break;
-    case 10:
-        blink_LED_BODY(DEFAULT_BLINK_ITERATION, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
         break;
     default:
         break;
@@ -369,4 +380,45 @@ void blink_LED_BODY(int iterations, int delay_on, int delay_off){
     led_args.delay_on = delay_on;
     led_args.delay_off = delay_off;
     chThdCreateStatic(waThdLedBODY_LED, sizeof(waThdLedBODY_LED), NORMALPRIO, ThdLed, &led_args);
+}
+
+static THD_WORKING_AREA(waThdLedLED2, 256);
+static THD_WORKING_AREA(waThdLedLED4, 256);
+static THD_WORKING_AREA(waThdLedLED6, 256);
+static THD_WORKING_AREA(waThdLedLED8, 256);
+static THD_FUNCTION(ThdRGBLed, arg) {
+ chRegSetThreadName(__FUNCTION__);
+    (void)arg;
+    thd_rgb_led_args *led_info = arg;
+    if (led_info->led_play_type == FOLLOW_PITCH){
+        set_rgb_led(led_info->led, 0, 0 , 0);
+        while (1) {
+            chThdSleepMilliseconds(led_info->delay_off);
+            choose_and_set_RGB(led_info->led);
+            chThdSleepMilliseconds(led_info->delay_on);
+            set_rgb_led(led_info->led, 0, 0 , 0);
+        }
+    } else {
+        // TO DO 
+    }
+    // move_done = true;
+    chThdExit(0);
+}
+
+/**
+* @brief Blink LED2
+*
+* @param iterations number of iterations to execute 
+* @param delay_on Number of ms to set the LED on
+* @param delay_off Number of ms to set the LED off
+*/
+void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+    static thd_rgb_led_args rgb_led_args;
+    rgb_led_args.led = LED2;
+    rgb_led_args.iterations = iterations;
+    rgb_led_args.delay_on = delay_on;
+    rgb_led_args.delay_off = delay_off;
+    rgb_led_args.colour = colour;
+    rgb_led_args.led_play_type = play_type;
+    chThdCreateStatic(waThdLedLED2, sizeof(waThdLedLED2), NORMALPRIO, ThdRGBLed, &rgb_led_args);
 }
