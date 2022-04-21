@@ -423,3 +423,57 @@ void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int pla
     rgb_led_args.led_play_type = play_type;
     chThdCreateStatic(waThdLedLED2, sizeof(waThdLedLED2), NORMALPRIO, ThdRGBLed, &rgb_led_args);
 }
+
+/**
+* @brief Blink LED4
+*
+* @param iterations number of iterations to execute 
+* @param delay_on Number of ms to set the LED on
+* @param delay_off Number of ms to set the LED off
+*/
+void blink_LED4(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+    static thd_rgb_led_args rgb_led_args;
+    rgb_led_args.led = LED4;
+    rgb_led_args.iterations = iterations;
+    rgb_led_args.delay_on = delay_on;
+    rgb_led_args.delay_off = delay_off;
+    rgb_led_args.colour = colour;
+    rgb_led_args.led_play_type = play_type;
+    chThdCreateStatic(waThdLedLED4, sizeof(waThdLedLED4), NORMALPRIO, ThdRGBLed, &rgb_led_args);
+}
+
+/**
+* @brief Blink LED6
+*
+* @param iterations number of iterations to execute 
+* @param delay_on Number of ms to set the LED on
+* @param delay_off Number of ms to set the LED off
+*/
+void blink_LED6(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+    static thd_rgb_led_args rgb_led_args;
+    rgb_led_args.led = LED6;
+    rgb_led_args.iterations = iterations;
+    rgb_led_args.delay_on = delay_on;
+    rgb_led_args.delay_off = delay_off;
+    rgb_led_args.colour = colour;
+    rgb_led_args.led_play_type = play_type;
+    chThdCreateStatic(waThdLedLED6, sizeof(waThdLedLED6), NORMALPRIO, ThdRGBLed, &rgb_led_args);
+}
+
+/**
+* @brief Blink LED8
+*
+* @param iterations number of iterations to execute 
+* @param delay_on Number of ms to set the LED on
+* @param delay_off Number of ms to set the LED off
+*/
+void blink_LED8(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+    static thd_rgb_led_args rgb_led_args;
+    rgb_led_args.led = LED8;
+    rgb_led_args.iterations = iterations;
+    rgb_led_args.delay_on = delay_on;
+    rgb_led_args.delay_off = delay_off;
+    rgb_led_args.colour = colour;
+    rgb_led_args.led_play_type = play_type;
+    chThdCreateStatic(waThdLedLED8, sizeof(waThdLedLED8), NORMALPRIO, ThdRGBLed, &rgb_led_args);
+}
