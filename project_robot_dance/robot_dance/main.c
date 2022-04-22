@@ -54,12 +54,14 @@ int main(void)
 	/* Main loop */
 
 	signals_processing_init();
-	chprintf((BaseSequentialStream *)&SD3, "etape 1 \n");
+
+	uint16_t pitch = 0;
 	while(1){
 		wait_send_to_computer();
-		chprintf((BaseSequentialStream *)&SD3, "etape 2 \n");
+		pitch = get_music_pitch();
+		chprintf((BaseSequentialStream *)&SD3, "pitch max: %d \n", pitch);
 		arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
-		SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+		//SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
 	}
 	while (1) {
 		chThdSleepMilliseconds(1000);

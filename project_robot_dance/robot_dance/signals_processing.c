@@ -11,6 +11,7 @@
 
 static float mic_cmplx_input[2 * CHUNK_SIZE];
 static float mic_output[CHUNK_SIZE];
+static float mic_amplitude[CHUNK_SIZE];
 
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
@@ -46,19 +47,18 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	static int iteration = 0;
 
 	while((iteration < 2*CHUNK_SIZE) && (i < num_samples/4)){
-			//micRight_cmplx_input[iteration] = data[4*i];
-			mic_cmplx_input[iteration] = data[4*i+1];
-			//micBack_cmplx_input[iteration] = data[4*i+2];
-			//micFront_cmplx_input[iteration] = data[4*i+3];
+			mic_cmplx_input[iteration] = data[4*i+2];
 			i++;
 			iteration ++;
 	}
 
 	if(iteration >= CHUNK_SIZE*2){
 		iteration = 0;
-
+		//arm_cmplx_mag_f32(mic_cmplx_input, mic_amplitude, CHUNK_SIZE);
 		doFFT_optimized(CHUNK_SIZE, mic_cmplx_input);
 		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE);
+
+
 
 		if(wait10 == 10){
 			wait10 = 0;
@@ -76,17 +76,39 @@ float* get_audio_buffer_ptr(void){
 void doFFT_optimized(uint16_t size, float* complex_buffer){
 	if(size == 1024)
 		arm_cfft_f32(&arm_cfft_sR_f32_len1024, complex_buffer, 0, 1);
-
 }
 
 void wait_send_to_computer(void){
 	chBSemWait(&sendToComputer_sem);
 }
 
+/**
+* @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max
+*
+* @return The uint_t of the index of the max
+*/
+float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
+	uint16_t max_index = 0;
+	for(uint16_t i = min_range; i < max_range; i++){
+		if(array_buffer[i] > array_buffer[max_index]){
+			max_index = i;
+		}
+	}
+	return max_index;
+}
+
 uint16_t get_music_tempo(){
 
 }
 
+//we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 16 to 512 as it goes from 0 to 512 in incremented values of 7.8125hz
 uint16_t get_music_pitch(){
+	uint16_t min_range = 16;
+	uint16_t max_range = 512;
+	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 78125;
+	return (uint16_t)(frequency/10000);
+}
+
+uint16_t get_amplitude(){
 
 }
