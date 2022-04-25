@@ -9,9 +9,16 @@
 #include "signals_processing.h"
 #include "choreography.h"
 
-static float mic_cmplx_input[2 * CHUNK_SIZE];
+//#define C_FFT
+#define R_FFT
+
 static float mic_output[CHUNK_SIZE];
-static float mic_amplitude[CHUNK_SIZE];
+static float mic_cmplx_input[2*CHUNK_SIZE];
+
+#ifdef R_FFT
+static float mic_input[CHUNK_SIZE];
+static arm_rfft_fast_instance_f32 arm_rfft_fast_f32_len1024;
+#endif
 
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
@@ -31,6 +38,9 @@ static THD_FUNCTION(ThdSignalsProcessing, arg) {
 
 void signals_processing_init(void){
 	mic_start(&processAudioData);
+	#ifdef R_FFT
+	arm_rfft_fast_init_f32(&arm_rfft_fast_f32_len1024, CHUNK_SIZE);
+	#endif
 }
 
 void processAudioData(int16_t *data, uint16_t num_samples){
@@ -42,25 +52,56 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	*	1024 samples, then we compute the FFTs.
 	*
 	*/
-	int i = 0;
-	static int wait10 = 0;
-	static int iteration = 0;
 
-	while((iteration < 2*CHUNK_SIZE) && (i < num_samples/4)){
-			mic_cmplx_input[iteration] = data[4*i+2];
-			i++;
-			iteration ++;
+	static int wait10 = 0;
+	int time_to_wait = 20;
+	static uint16_t nb_samples = 0;
+
+	/*for(int i = 0; i <num_samples; i+=4){
+		mic_cmplx_input[nb_samples] = data[i + MIC_BACK]
+
+	}*/
+
+
+	for(uint16_t i = 0 ; i < num_samples ; i+=4){
+	#ifdef R_FFT
+		mic_input[nb_samples] = (float)data[i + MIC_BACK];
+		nb_samples++;
+		if(nb_samples >= (CHUNK_SIZE)){
+			break;
+		}
+	#endif
+
+	#ifdef C_FFT
+		mic_cmplx_input[nb_samples] = (float)data[i + MIC_BACK];
+		nb_samples++;
+		mic_cmplx_input[nb_samples] = 0;
+		nb_samples++;
+		if(nb_samples >= (2 * CHUNK_SIZE)){
+			break;
+		}
+	#endif
 	}
 
-	if(iteration >= CHUNK_SIZE*2){
-		iteration = 0;
+	#ifdef C_FFT
+	if(nb_samples >= (2 * CHUNK_SIZE)){
+	#endif
+	#ifdef R_FFT
+	if(nb_samples >= (CHUNK_SIZE)){
+	#endif
+		nb_samples = 0;
 		//arm_cmplx_mag_f32(mic_cmplx_input, mic_amplitude, CHUNK_SIZE);
+		#ifdef R_FFT
+		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input,mic_cmplx_input,0);
+		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE);
+		#endif
+		#ifdef C_FFT
 		doFFT_optimized(CHUNK_SIZE, mic_cmplx_input);
 		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE);
+		#endif
 
 
-
-		if(wait10 == 10){
+		if(wait10 == time_to_wait){
 			wait10 = 0;
 			chBSemSignal(&sendToComputer_sem);
 		} else {
@@ -101,11 +142,12 @@ uint16_t get_music_tempo(){
 
 }
 
-//we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 16 to 512 as it goes from 0 to 512 in incremented values of 7.8125hz
+//we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
 uint16_t get_music_pitch(){
-	uint16_t min_range = 16;
-	uint16_t max_range = 512;
+	uint16_t min_range = LOW_FILTER_INDEX;
+	uint16_t max_range = HIGH_FILTER_INDEX;
 	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 78125;
+	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
 	return (uint16_t)(frequency/10000);
 }
 

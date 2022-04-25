@@ -59,9 +59,9 @@ int main(void)
 	while(1){
 		wait_send_to_computer();
 		pitch = get_music_pitch();
-		chprintf((BaseSequentialStream *)&SD3, "pitch max: %d \n", pitch);
+		//chprintf((BaseSequentialStream *)&SD3, "pitch max: %d \n", pitch);
 		arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
-		//SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+		SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
 	}
 	while (1) {
 		chThdSleepMilliseconds(1000);
