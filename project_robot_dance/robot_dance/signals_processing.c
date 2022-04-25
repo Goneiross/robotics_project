@@ -11,9 +11,10 @@
 
 
 static float mic_output[CHUNK_SIZE/2];
-static float mic_cmplx_input[CHUNK_SIZE];
+static float mic_cmplx_output[CHUNK_SIZE];
 
-static float mic_input[CHUNK_SIZE];
+static float mic_input0[CHUNK_SIZE];
+static float mic_input1[CHUNK_SIZE];
 static arm_rfft_fast_instance_f32 arm_rfft_fast_f32_len1024;
 
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
@@ -48,28 +49,36 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	*/
 
 	static int wait10 = 0;
-	int time_to_wait = 100;
-	static uint16_t nb_samples = 0;
-
-	/*for(int i = 0; i <num_samples; i+=4){
-		mic_cmplx_input[nb_samples] = data[i + MIC_BACK]
-
-	}*/
-
+	int time_to_wait = 5;
+	static uint16_t buffer_state = 0;
+	static bool input_number = false;
+	static bool buffer_full = false;
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		mic_input[nb_samples] = (float)data[i + MIC_BACK];
-		nb_samples++;
-		if(nb_samples >= (CHUNK_SIZE)){
-			break;
+		if(input_number == false){
+			mic_input0[buffer_state] = (float)data[i + MIC_BACK];
+		}
+		if(input_number == true){
+			mic_input1[buffer_state] = (float)data[i + MIC_BACK];
+		}
+		buffer_state++;
+
+		if(buffer_state >= (CHUNK_SIZE)){
+			input_number = !input_number;
+			buffer_state = 0;
+			buffer_full = true;
 		}
 	}
 
-	if(nb_samples >= (CHUNK_SIZE)){
-		nb_samples = 0;
-		//arm_cmplx_mag_f32(mic_cmplx_input, mic_amplitude, CHUNK_SIZE);
-		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input,mic_cmplx_input,0);
-		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE/2);
+	if(buffer_full){
+		buffer_full = false;
+		//arm_cmplx_mag_f32(mic_cmplx_output, mic_amplitude, CHUNK_SIZE);
+		if(input_number == true){
+			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_output,0);
+		} else {
+			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_output,0);
+		}
+		arm_cmplx_mag_f32(mic_cmplx_output, mic_output, CHUNK_SIZE/2);
 
 
 		if(wait10 == time_to_wait){
