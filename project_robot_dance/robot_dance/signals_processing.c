@@ -9,16 +9,12 @@
 #include "signals_processing.h"
 #include "choreography.h"
 
-//#define C_FFT
-#define R_FFT
 
 static float mic_output[CHUNK_SIZE/2];
-static float mic_cmplx_input[2*CHUNK_SIZE];
+static float mic_cmplx_input[CHUNK_SIZE];
 
-#ifdef R_FFT
 static float mic_input[CHUNK_SIZE];
 static arm_rfft_fast_instance_f32 arm_rfft_fast_f32_len1024;
-#endif
 
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
@@ -38,9 +34,7 @@ static THD_FUNCTION(ThdSignalsProcessing, arg) {
 
 void signals_processing_init(void){
 	mic_start(&processAudioData);
-	#ifdef R_FFT
 	arm_rfft_fast_init_f32(&arm_rfft_fast_f32_len1024, CHUNK_SIZE);
-	#endif
 }
 
 void processAudioData(int16_t *data, uint16_t num_samples){
@@ -64,41 +58,18 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-	#ifdef R_FFT
 		mic_input[nb_samples] = (float)data[i + MIC_BACK];
 		nb_samples++;
 		if(nb_samples >= (CHUNK_SIZE)){
 			break;
 		}
-	#endif
-
-	#ifdef C_FFT
-		mic_cmplx_input[nb_samples] = (float)data[i + MIC_BACK];
-		nb_samples++;
-		mic_cmplx_input[nb_samples] = 0;
-		nb_samples++;
-		if(nb_samples >= (2 * CHUNK_SIZE)){
-			break;
-		}
-	#endif
 	}
 
-	#ifdef C_FFT
-	if(nb_samples >= (2 * CHUNK_SIZE)){
-	#endif
-	#ifdef R_FFT
 	if(nb_samples >= (CHUNK_SIZE)){
-	#endif
 		nb_samples = 0;
 		//arm_cmplx_mag_f32(mic_cmplx_input, mic_amplitude, CHUNK_SIZE);
-		#ifdef R_FFT
 		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input,mic_cmplx_input,0);
 		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE/2);
-		#endif
-		#ifdef C_FFT
-		doFFT_optimized(CHUNK_SIZE, mic_cmplx_input);
-		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE);
-		#endif
 
 
 		if(wait10 == time_to_wait){
@@ -112,11 +83,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 float* get_audio_buffer_ptr(void){
 		return mic_output;
-}
-
-void doFFT_optimized(uint16_t size, float* complex_buffer){
-	if(size == 1024)
-		arm_cfft_f32(&arm_cfft_sR_f32_len1024, complex_buffer, 0, 1);
 }
 
 void wait_send_to_computer(void){
