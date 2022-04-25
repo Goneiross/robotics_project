@@ -12,7 +12,7 @@
 //#define C_FFT
 #define R_FFT
 
-static float mic_output[CHUNK_SIZE];
+static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_input[2*CHUNK_SIZE];
 
 #ifdef R_FFT
@@ -54,7 +54,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	*/
 
 	static int wait10 = 0;
-	int time_to_wait = 20;
+	int time_to_wait = 100;
 	static uint16_t nb_samples = 0;
 
 	/*for(int i = 0; i <num_samples; i+=4){
@@ -93,7 +93,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		//arm_cmplx_mag_f32(mic_cmplx_input, mic_amplitude, CHUNK_SIZE);
 		#ifdef R_FFT
 		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input,mic_cmplx_input,0);
-		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE);
+		arm_cmplx_mag_f32(mic_cmplx_input, mic_output, CHUNK_SIZE/2);
 		#endif
 		#ifdef C_FFT
 		doFFT_optimized(CHUNK_SIZE, mic_cmplx_input);

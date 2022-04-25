@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-//#include <messagebus.h>
+#include <msgbus/messagebus.h>
 
 #include <ch.h>
 #include <hal.h>
@@ -22,7 +22,6 @@ CONDVAR_DECL(bus_condvar);
 static float send_tab[CHUNK_SIZE];
 
 
-
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -40,10 +39,10 @@ int main(void)
 	/* System init */
 	halInit();
 	chSysInit();
+
 	serial_start();
 	usb_start();
 	motors_init();
-
 	detection_init();
 	choreography_init();
 	/* Bus init */
@@ -60,7 +59,9 @@ int main(void)
 		wait_send_to_computer();
 		pitch = get_music_pitch();
 		//chprintf((BaseSequentialStream *)&SD3, "pitch max: %d \n", pitch);
+
 		arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
+
 		SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
 	}
 	while (1) {
