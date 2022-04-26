@@ -3,7 +3,7 @@
 
 #include <ch.h>
 #include <hal.h>
-//#include <messagebus.h>
+
 #include <sensors/proximity.h>
 #include <chprintf.h>
 #include "memory_protection.h"
@@ -17,10 +17,14 @@
 #define THRESHOLD_DIST 80
 #define FACTOR 0.01 // MODIFIER CA !!!
 
-//extern messagebus_t bus;
-
 static int prox[8] = {0};
 static int obstacle_dist[8] = {0};
+
+void compute_distance(void);
+void debug_detection(int level);
+int detection_init(void);
+bool is_obstacle(void);
+void update_obstacle_array(bool *obstacle);
 
 static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
@@ -56,6 +60,26 @@ void compute_distance(){
 }
 
 /**
+* @brief chprintf data to debug
+*
+* @param level 0 none, 1 basics, 2 medium, 3 all
+*/
+void debug_detection(int level){
+    if(level >= 1) {
+       chprintf((BaseSequentialStream *)&SD3, "Debug level %d : \n", level); 
+    } 
+    if(level >= 2) {
+    }
+    if (level >= 3){
+        for (int i = 0; i < LED_IR_nb; i++){
+            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i], obstacle_dist[i], i);
+        }
+        chprintf((BaseSequentialStream *)&SD3, "\n");
+    }
+}
+
+
+/**
 * @brief Initializes IR detection and calibrates it
 *
 * @return 0 if no error
@@ -66,20 +90,6 @@ int detection_init(){
     unsigned int rand_seed = get_prox(0)*get_prox(1)*get_prox(2)*get_prox(3)*get_prox(4)*get_prox(5)*get_prox(6)*get_prox(7);
     srand(rand_seed); 
     return 0;
-}
-
-/**
-* @brief Returns if a 8 boolean array for object detection
-*
-* @return Array of obstacle detection
-*/
-void update_obstacle_array(bool *obstacle){
-    for (int i = 0; i < LED_IR_nb; i++){
-        obstacle[i] = false;
-        if (obstacle_dist[i] < THRESHOLD_DIST) {
-            obstacle[i] = true;
-        }
-    }
 }
 
 /**
@@ -94,6 +104,20 @@ bool is_obstacle(){
         }
     }*/
     return false;
+}
+
+/**
+* @brief Returns if a 8 boolean array for object detection
+*
+* @return Array of obstacle detection
+*/
+void update_obstacle_array(bool *obstacle){
+    for (int i = 0; i < LED_IR_nb; i++){
+        obstacle[i] = false;
+        if (obstacle_dist[i] < THRESHOLD_DIST) {
+            obstacle[i] = true;
+        }
+    }
 }
 
 // /**
@@ -113,22 +137,3 @@ bool is_obstacle(){
 // float get_obstacle_distance(){
 //     return ;
 // }
-
-/**
-* @brief chprintf data to debug
-*
-* @param level 0 none, 1 basics, 2 medium, 3 all
-*/
-void debug_detection(int level){
-    if(level >= 1) {
-       chprintf((BaseSequentialStream *)&SD3, "Debug level %d : \n", level); 
-    } 
-    if(level >= 2) {
-    }
-    if (level >= 3){
-        for (int i = 0; i < LED_IR_nb; i++){
-            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i], obstacle_dist[i], i);
-        }
-        chprintf((BaseSequentialStream *)&SD3, "\n");
-    }
-}
