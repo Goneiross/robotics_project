@@ -40,6 +40,15 @@
 #define PITCH_5 2500
 
 typedef enum {
+	ESCAPE_OBSTACLE,
+    MOVE_FORWARD,
+    MOVE_BACKWARD,
+    FULL_ROTATION,
+    TURN_AROUND,
+    DO_NOTHING,
+} move_type;
+
+typedef enum {
 	FOLLOW_PITCH,
     MANUAL,
 } led_play_type;
@@ -86,7 +95,7 @@ void blink_LED7(int iterations, int delay_on, int delay_off);
 void blink_LED_BODY(int iterations, int delay_on, int delay_off);
 void blink_LED_FRONT(int iterations, int delay_on, int delay_off);
 void choose_and_set_RGB(rgb_led_name_t led_number);
-int choose_move(void);
+int choose_move(uint8_t old_move_nb);
 void escape_obstacle(void);
 void full_rotation(void);
 void move(int move_chosen);
@@ -94,6 +103,7 @@ void move_backward(uint8_t time_s, uint16_t speed);
 void move_forward(uint8_t time_s, uint16_t speed);
 void start_leds(void);
 void turn_around(void);
+void do_nothing(uint8_t time_s);
 
 
 static THD_WORKING_AREA(waThdDance, 256);
@@ -117,10 +127,14 @@ static bool move_done = true;
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
+    static uint8_t move_nb = 0;
+    static uint8_t old_move_nb = 0;
     systime_t time;
     while(1){
     	if(move_done == true){
-    		move(choose_move());// pas random pour l'instant
+            old_move_nb = move_nb; 
+            move_nb = choose_move(old_move_nb);
+    		move(move_nb);// pas random pour l'instant
     		move_done = false;
     	}
 
@@ -390,17 +404,119 @@ void choose_and_set_RGB(rgb_led_name_t led_number){
 /**
 * @brief Choose the move to execute
 *
+* @param old_move_nb The old move number choosen
+*
 * @return the value of the move
 */
-int choose_move(){
+int choose_move(uint8_t old_move_nb){
 	if (is_obstacle() == true){
-        return 0;
+        return ESCAPE_OBSTACLE;
     } else {
-        // uint16_t tempo = get_music_tempo();
-        // uint16_t pitch = get_music_pitch();
-    	uint8_t random = 1 + rand() % (MOVE_NB - 1);
+        uint16_t tempo = get_music_tempo();
+        uint8_t move = 0;
+    	//uint8_t random = 1 + rand() % (MOVE_NB - 1);
+        uint8_t random = 1 + rand() % 99; // Get a random number between 1 and 100
+        if (tempo < TEMPO_0) {
+            if (random < 70) {
+                move = FULL_ROTATION;
+            } else if (random < 90) {
+                move = TURN_AROUND;
+            } else if (random < 95) {
+                move = DO_NOTHING;
+            } else {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            }
+        } else if (tempo < TEMPO_1) {
+            if (random < 70) {
+                move = FULL_ROTATION;
+            } else if (random < 90) {
+                move = TURN_AROUND;
+            } else if (random < 95) {
+                move = DO_NOTHING;
+            } else {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            }
+        } else if (tempo < TEMPO_2) {
+            if (random < 70) {
+                move = FULL_ROTATION;
+            } else if (random < 90) {
+                move = TURN_AROUND;
+            } else if (random < 95) {
+                move = DO_NOTHING;
+            } else {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            }
+        } else if (tempo < TEMPO_3) {
+            if (random < 70) {
+                move = TURN_AROUND;
+            } else if (random < 90) {
+                move = FULL_ROTATION;
+            } else if (random < 95) {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            } else {
+                move = DO_NOTHING;
+            }            
+        } else if (tempo < TEMPO_4) {
+            if (random < 70) {
+                move = TURN_AROUND;
+            } else if (random < 90) {
+                move = FULL_ROTATION;
+            } else if (random < 95) {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            } else {
+                move = DO_NOTHING;
+            }
+        } else if (tempo < TEMPO_5) {
+            if (random < 70) {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            } else if (random < 90) {
+                move = TURN_AROUND;
+            } else if (random < 95) {
+                move = FULL_ROTATION;
+            } else {
+                move = DO_NOTHING;
+            }            
+        } else {
+            if (random < 70) {
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
+                } else {
+                    move = MOVE_FORWARD;
+                }
+            } else if (random < 90) {
+                move = TURN_AROUND;
+            } else if (random < 95) {
+                move = DO_NOTHING;
+            } else {
+                move = FULL_ROTATION;
+            }
+        }
     	//chprintf((BaseSequentialStream *)&SD3, " random: %d \n", random);
-        return (random);
+        return (move);
     }
 }
 
@@ -439,20 +555,23 @@ void full_rotation(){
 void move(int move_chosen){
     switch (move_chosen)
     {
-    case 0:
+    case ESCAPE_OBSTACLE:
         escape_obstacle();
         break;
-    case 1:
+    case MOVE_FORWARD:
         move_forward(DEFAULT_MOVE_TIME_S, MOTOR_MEDIUM_SPEED);
         break;
-    case 2:
+    case MOVE_BACKWARD:
         move_backward(DEFAULT_MOVE_TIME_S, MOTOR_MEDIUM_SPEED);
         break;
-    case 3:
+    case FULL_ROTATION:
         full_rotation();
         break;
-    case 4:
+    case TURN_AROUND:
         turn_around();
+        break;
+    case DO_NOTHING:
+        do_nothing(DEFAULT_MOVE_TIME_S);
         break;
     default:
         break;
@@ -495,4 +614,11 @@ void start_leds(){
 */
 void turn_around(){
     // TO DO
+}
+
+void do_nothing(uint8_t time_s){
+	motor_args.time_s = time_s;
+	motor_args.speed_left = 0;
+	motor_args.speed_right = 0;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
