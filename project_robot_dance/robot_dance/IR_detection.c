@@ -22,9 +22,9 @@ static int obstacle_dist[8] = {0};
 
 void compute_distance(void);
 void debug_detection(int level);
-int detection_init(void);
-bool is_obstacle(void);
-void update_obstacle_array(bool *obstacle);
+//int detection_init(void);
+//bool is_obstacle(void);
+//void update_obstacle_array(bool *obstacle);
 
 static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
