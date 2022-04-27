@@ -21,6 +21,8 @@ static float rms_frequencies[WINDOW_SIZE];
 static float rms_frequencies_shift[WINDOW_SIZE];
 static float rms_frequency_old = 0;
 
+static float auto_correlation[2*WINDOW_SIZE];
+
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
 static THD_WORKING_AREA(waThdSignalsProcessing, 128);
@@ -108,11 +110,12 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			for(uint8_t i=0; i < WINDOW_SIZE; i++){
 				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
 			}
-			//chBSemSignal(&sendToComputer_sem);
+			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
+			chBSemSignal(&sendToComputer_sem);
 		}
 
 		if(mean_rms_derivative_fft <= abs_derivative){
-			chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
+			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
 		}
 
 		if(wait10 == time_to_wait){
@@ -130,6 +133,9 @@ float* get_audio_buffer_ptr(void){
 
 float* get_rms_frequencies(void){
 	return rms_frequencies_shift;
+}
+float* get_auto_correlation(void){
+	return auto_correlation;
 }
 
 void wait_send_to_computer(void){
@@ -152,7 +158,11 @@ float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_r
 }
 
 uint16_t get_music_tempo(){
-
+	uint16_t min_range = 4+WINDOW_SIZE;
+	uint16_t max_range = 46+WINDOW_SIZE;
+	uint32_t tempo = ((float)60/(0.069*(float)(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE)));
+	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
+	return (uint16_t)(tempo);
 }
 
 //we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz

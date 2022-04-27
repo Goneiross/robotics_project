@@ -11,6 +11,8 @@ void signals_processing_init(void);
 void processAudioData(int16_t *data, uint16_t num_samples);
 float* get_audio_buffer_ptr(void);
 float* get_rms_frequencies(void);
+float* get_auto_correlation(void);
 void wait_send_to_computer(void);
+
 
 #endif
