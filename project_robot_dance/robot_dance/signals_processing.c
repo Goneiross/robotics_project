@@ -17,6 +17,10 @@ static float mic_input0[CHUNK_SIZE];
 static float mic_input1[CHUNK_SIZE];
 static arm_rfft_fast_instance_f32 arm_rfft_fast_f32_len1024;
 
+static float rms_frequencies[WINDOW_SIZE];
+static float rms_frequencies_shift[WINDOW_SIZE];
+static float rms_frequency_old = 0;
+
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
 static THD_WORKING_AREA(waThdSignalsProcessing, 128);
@@ -50,22 +54,26 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static int wait10 = 0;
 	int time_to_wait = 5;
-	static uint16_t buffer_state = 0;
+	static uint16_t mic_input_i = 0;
 	static bool input_number = false;
 	static bool buffer_full = false;
+	static uint8_t rms_frequencies_i = 0;
+	float abs_derivative = 0;
+	float rms_frequency = 0;
+	static float mean_rms_derivative_fft = 0;
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
 		if(input_number == false){
-			mic_input0[buffer_state] = (float)data[i + MIC_BACK];
+			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
 		}
 		if(input_number == true){
-			mic_input1[buffer_state] = (float)data[i + MIC_BACK];
+			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
 		}
-		buffer_state++;
+		mic_input_i++;
 
-		if(buffer_state >= (CHUNK_SIZE)){
+		if(mic_input_i >= (CHUNK_SIZE)){
 			input_number = !input_number;
-			buffer_state = 0;
+			mic_input_i = 0;
 			buffer_full = true;
 		}
 	}
@@ -79,11 +87,37 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_output,0);
 		}
 		arm_cmplx_mag_f32(mic_cmplx_output, mic_output, CHUNK_SIZE/2);
+		arm_rms_f32(&mic_output,CHUNK_SIZE/2,&rms_frequency);
+		rms_frequencies[rms_frequencies_i] = rms_frequency;
+		rms_frequencies_i ++;
+		//chBSemSignal(&sendToComputer_sem);
 
+		abs_derivative = fabs(rms_frequency - rms_frequency_old);
+		//chprintf((BaseSequentialStream *)&SD3, "rms old: %f   ,  rms new: %f,  abs_derivative:%f \n", rms_frequency, rms_frequency_old, abs_derivative);
+		rms_frequency_old = rms_frequency;
+
+		if(rms_frequencies_i >= (WINDOW_SIZE)){
+			rms_frequencies_i = 0;
+			rms_frequencies_shift[0] = rms_frequencies[0];
+			for(uint8_t i=0; i < WINDOW_SIZE-1; i++){
+				rms_frequencies_shift[i+1] = rms_frequencies[i];
+			}
+			arm_sub_f32(&rms_frequencies,&rms_frequencies_shift,&rms_frequencies_shift,WINDOW_SIZE);
+			arm_abs_f32(&rms_frequencies_shift,&rms_frequencies_shift,WINDOW_SIZE);
+			arm_rms_f32(&rms_frequencies_shift,WINDOW_SIZE,&mean_rms_derivative_fft);
+			for(uint8_t i=0; i < WINDOW_SIZE; i++){
+				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
+			}
+			//chBSemSignal(&sendToComputer_sem);
+		}
+
+		if(mean_rms_derivative_fft <= abs_derivative){
+			chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
+		}
 
 		if(wait10 == time_to_wait){
 			wait10 = 0;
-			chBSemSignal(&sendToComputer_sem);
+			//chBSemSignal(&sendToComputer_sem);
 		} else {
 			wait10 ++;
 		}
@@ -92,6 +126,10 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 float* get_audio_buffer_ptr(void){
 		return mic_output;
+}
+
+float* get_rms_frequencies(void){
+	return rms_frequencies_shift;
 }
 
 void wait_send_to_computer(void){
@@ -121,9 +159,9 @@ uint16_t get_music_tempo(){
 uint16_t get_music_pitch(){
 	uint16_t min_range = LOW_FILTER_INDEX;
 	uint16_t max_range = HIGH_FILTER_INDEX;
-	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 78125;
+	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 15625;
 	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
-	return (uint16_t)(frequency/10000);
+	return (uint16_t)(frequency/1000);
 }
 
 uint16_t get_amplitude(){

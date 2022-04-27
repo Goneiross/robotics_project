@@ -19,7 +19,8 @@
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
-static float send_tab[CHUNK_SIZE];
+static float send_tab[CHUNK_SIZE/2];
+static float send_rms[WINDOW_SIZE];
 
 
 static void serial_start(void)
@@ -60,9 +61,12 @@ int main(void)
 		pitch = get_music_pitch();
 		//chprintf((BaseSequentialStream *)&SD3, "pitch max: %d \n", pitch);
 
-		arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE);
+		//arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE/2);
+		arm_copy_f32(get_rms_frequencies(), send_rms, WINDOW_SIZE);
 
-		SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE);
+
+		//SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, CHUNK_SIZE/2);
+		SendFloatToComputer((BaseSequentialStream *) &SD3, send_rms, WINDOW_SIZE);
 	}
 	while (1) {
 		chThdSleepMilliseconds(1000);
