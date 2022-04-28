@@ -546,8 +546,10 @@ void escape_obstacle(){
 * @param iterations number of iterations to execute 
 */
 void full_rotation(){
-    // TO DO
-	move_done = true;
+    motor_args.time_s = DEFAULT_MOVE_TIME_S;
+	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
+	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
@@ -615,9 +617,11 @@ void start_leds(){
 /**
 * @brief Make the epuck turn around
 */
-void turn_around(){
-    // TO DO
-	move_done = true;
+void full_rotation(){
+    motor_args.time_s = DEFAULT_MOVE_TIME_S / 2;
+	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
+	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 void do_nothing(uint8_t time_s){
