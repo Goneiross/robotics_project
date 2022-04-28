@@ -161,7 +161,7 @@ uint16_t get_music_tempo(){
 	uint16_t min_range = 4+WINDOW_SIZE;
 	uint16_t max_range = 46+WINDOW_SIZE;
 	uint32_t tempo = ((float)60/(0.069*(float)(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE)));
-	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
+	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre Ã  ce moment
 	return (uint16_t)(tempo);
 }
 
@@ -170,10 +170,9 @@ uint16_t get_music_pitch(){
 	uint16_t min_range = LOW_FILTER_INDEX;
 	uint16_t max_range = HIGH_FILTER_INDEX;
 	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 15625;
-	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
+	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre Ã  ce moment
 	return (uint16_t)(frequency/1000);
 }
 
 uint16_t get_amplitude(){
-
 }

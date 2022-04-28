@@ -13,6 +13,7 @@ float* get_audio_buffer_ptr(void);
 float* get_rms_frequencies(void);
 float* get_auto_correlation(void);
 void wait_send_to_computer(void);
-
+uint16_t get_music_tempo(void);
+uint16_t get_music_pitch(void);
 
 #endif
