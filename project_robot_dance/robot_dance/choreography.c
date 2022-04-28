@@ -81,8 +81,8 @@ typedef struct thd_rgb_led_args
 typedef struct thd_motor_args
 {
     uint8_t time_s;
-    uint16_t speed_left;
-    uint16_t speed_right;
+    int16_t speed_left;
+    int16_t speed_right;
 } thd_motor_args;
 
 void blink_LED1(int iterations, int delay_on, int delay_off);
@@ -99,8 +99,8 @@ int choose_move(uint8_t old_move_nb);
 void escape_obstacle(void);
 void full_rotation(void);
 void move(int move_chosen);
-void move_backward(uint8_t time_s, uint16_t speed);
-void move_forward(uint8_t time_s, uint16_t speed);
+void move_backward(uint8_t time_s, int16_t speed);
+void move_forward(uint8_t time_s, int16_t speed);
 void start_leds(void);
 void turn_around(void);
 void do_nothing(uint8_t time_s);
@@ -132,10 +132,12 @@ static THD_FUNCTION(ThdDance, arg) {
     systime_t time;
     while(1){
     	if(move_done == true){
-            old_move_nb = move_nb; 
+    		if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
+    			old_move_nb = move_nb;
+    		}
             move_nb = choose_move(old_move_nb);
-    		move(move_nb);// pas random pour l'instant
     		move_done = false;
+    		move(move_nb);// pas random pour l'instant
     	}
 
         time = chVTGetSystemTime();
@@ -515,7 +517,7 @@ int choose_move(uint8_t old_move_nb){
                 move = FULL_ROTATION;
             }
         }
-    	//chprintf((BaseSequentialStream *)&SD3, " random: %d \n", random);
+    	chprintf((BaseSequentialStream *)&SD3, " move: %d \n", move);
         return (move);
     }
 }
@@ -527,7 +529,7 @@ int choose_move(uint8_t old_move_nb){
 */
 int choreography_init(){
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    start_leds();
+    //start_leds();
     return 0;
 }
 
@@ -545,6 +547,7 @@ void escape_obstacle(){
 */
 void full_rotation(){
     // TO DO
+	move_done = true;
 }
 
 /**
@@ -581,7 +584,7 @@ void move(int move_chosen){
 /**
 * @brief Move the epuck backward
 */
-void move_backward(uint8_t time_s, uint16_t speed){
+void move_backward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
@@ -591,7 +594,7 @@ void move_backward(uint8_t time_s, uint16_t speed){
 /**
 * @brief Move the epuck forward
 */
-void move_forward(uint8_t time_s, uint16_t speed){
+void move_forward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
@@ -614,6 +617,7 @@ void start_leds(){
 */
 void turn_around(){
     // TO DO
+	move_done = true;
 }
 
 void do_nothing(uint8_t time_s){
