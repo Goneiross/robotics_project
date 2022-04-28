@@ -9,6 +9,7 @@
 #include "memory_protection.h"
 
 #include "choreography.h"
+#include "IR_detection.h"
 
 #define DEBUG_LEVEL 0
 #define LED_IR_nb 8
