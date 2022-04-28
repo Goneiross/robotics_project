@@ -542,8 +542,6 @@ void escape_obstacle(){
 
 /**
 * @brief DO a full rotation of the epuck
-*
-* @param iterations number of iterations to execute 
 */
 void full_rotation(){
     motor_args.time_s = DEFAULT_MOVE_TIME_S;
@@ -585,6 +583,9 @@ void move(int move_chosen){
 
 /**
 * @brief Move the epuck backward
+*
+* @param time_s Time in seconds to move backward
+* @param speed Speed chosen to move
 */
 void move_backward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
@@ -595,6 +596,9 @@ void move_backward(uint8_t time_s, int16_t speed){
 
 /**
 * @brief Move the epuck forward
+*
+* @param time_s Time in seconds to move forward
+* @param speed Speed chosen to move
 */
 void move_forward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
@@ -624,6 +628,11 @@ void full_rotation(){
     chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
+/**
+* @brief Make the epuck do nothing
+*
+* @param time_s Time to do nothing in seconds
+*/
 void do_nothing(uint8_t time_s){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = 0;
