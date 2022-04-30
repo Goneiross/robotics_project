@@ -621,7 +621,7 @@ void start_leds(){
 /**
 * @brief Make the epuck turn around
 */
-void full_rotation(){
+void turn_around(){
     motor_args.time_s = DEFAULT_MOVE_TIME_S / 2;
 	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
 	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
