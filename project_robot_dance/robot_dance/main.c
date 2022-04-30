@@ -45,7 +45,7 @@ int main(void)
 	serial_start();
 	usb_start();
 	motors_init();
-	detection_init();
+	//detection_init();
 	choreography_init();
 	/* Bus init */
 

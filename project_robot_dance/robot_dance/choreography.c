@@ -3,19 +3,22 @@
 
 #include <stdint.h>
 #include <ch.h>
+#include <hal.h>
 #include <time.h>
+#include "memory_protection.h"
 
 #include <chprintf.h>
 #include <leds.h>
 #include <motors.h>
+#include <spi_comm.h>
 
 #include "choreography.h"
 #include "IR_detection.h"
 #include "signals_processing.h"
 
 #define MOVE_NB 4
-#define DEFAULT_BLINK_DELAY_ON 500
-#define DEFAULT_BLINK_DELAY_OFF 500
+#define DEFAULT_BLINK_DELAY_ON 50
+#define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 10
 #define DEFAULT_ROTATION_ITERATION 1
 #define DEFAULT_MOVE_TIME_S 3
@@ -109,7 +112,7 @@ void do_nothing(uint8_t time_s);
 static THD_WORKING_AREA(waThdDance, 256);
 static THD_WORKING_AREA(waThdMotor, 256);
 static THD_WORKING_AREA(waThdLedLED1, 256);
-static THD_WORKING_AREA(waThdLedLED2, 256);
+static THD_WORKING_AREA(waThdLedLED2, 1024);
 static THD_WORKING_AREA(waThdLedLED3, 256);
 static THD_WORKING_AREA(waThdLedLED4, 256);
 static THD_WORKING_AREA(waThdLedLED5, 256);
@@ -386,6 +389,7 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
 */
 void choose_and_set_RGB(rgb_led_name_t led_number){
     uint16_t pitch = get_music_pitch();
+
     if (pitch < PITCH_0 ) {
         set_rgb_led(led_number, 255, 0 , 0);
     } else if (pitch < PITCH_1) {
@@ -400,7 +404,7 @@ void choose_and_set_RGB(rgb_led_name_t led_number){
         set_rgb_led(led_number, 75, 0, 130);
     } else {
         set_rgb_led(led_number, 148, 0, 211);
-    }  
+    }
 }
 
 /**
@@ -528,8 +532,10 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    //start_leds();
+    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+
+    spi_comm_start();
+    start_leds();
     return 0;
 }
 
@@ -606,10 +612,10 @@ void move_forward(uint8_t time_s, int16_t speed){
 */
 void start_leds(){
     rgb initial_rgb = {0, 0 ,0};
-    blink_LED2(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED4(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED6(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED8(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED2(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED4(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED6(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED8(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
 }
 
 /**

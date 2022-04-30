@@ -175,4 +175,5 @@ uint16_t get_music_pitch(){
 }
 
 uint16_t get_amplitude(){
+
 }
