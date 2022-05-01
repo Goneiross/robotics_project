@@ -11,12 +11,13 @@
 #include "choreography.h"
 #include "IR_detection.h"
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 3
 #define LED_IR_nb 8
 #define THRESHOLD_PROX_MIN 10 // MODIFIER CA !!! 
 #define THRESHOLD_PROX_MAX 1000 // MODIFIER CA !!! 
 #define THRESHOLD_DIST 80
-#define FACTOR 0.01 // MODIFIER CA !!!
+#define P1 0.00017303
+#define P2 0.00054629
 
 static int prox[8] = {0};
 static int obstacle_dist[8] = {0};
@@ -55,7 +56,11 @@ void compute_distance(){
     for (int i = 0; i < LED_IR_nb; i++){
         obstacle_dist[i] = 0;
         if ((prox[i] > THRESHOLD_PROX_MIN) && (prox[i] < THRESHOLD_PROX_MAX)) {
-            obstacle_dist[i] = FACTOR * prox[i];
+            obstacle_dist[i] = (1/(float)prox[i] + P2)/P1;
+            // 1/prox = p1*distance - p2
+            //distance = (1/prox+p2)/p1
+            // p1 = 0.00017303
+            //p2 = 0.00054629
         }
     }
 }
@@ -73,7 +78,7 @@ void debug_detection(int level){
     }
     if (level >= 3){
         for (int i = 0; i < LED_IR_nb; i++){
-            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i], obstacle_dist[i], i);
+            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i],i ,obstacle_dist[i]);
         }
         chprintf((BaseSequentialStream *)&SD3, "\n");
     }
