@@ -42,6 +42,8 @@
 #define PITCH_4 1300
 #define PITCH_5 2500
 
+#define COLOR_HZ_RANGE 2000
+
 typedef enum {
 	ESCAPE_OBSTACLE,
     MOVE_FORWARD,
@@ -389,7 +391,36 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
 */
 void choose_and_set_RGB(rgb_led_name_t led_number){
     uint16_t pitch = get_music_pitch();
+    uint8_t r = 255;
+    uint8_t g = 255;
+    uint8_t b = 255;
+    /*if(pitch < COLOR_HZ_RANGE/6){
+    	g =0;
+    	b = (pitch * 6 * 255) / COLOR_HZ_RANGE;
+    } else if(pitch < 2*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
 
+    } else if(pitch< 3*COLOR_HZ_RANGE/6){
+    	r = 0;
+    	g = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
+    } else if(pitch < 4*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
+
+    } else if(pitch < 5*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
+
+    } else if(pitch < COLOR_HZ_RANGE){
+    	r=0;
+    	g=0;
+    	b=0;
+    }
+    set_rgb_led(led_number, r, g , b);*/
     if (pitch < PITCH_0 ) {
         set_rgb_led(led_number, 255, 0 , 0);
     } else if (pitch < PITCH_1) {
