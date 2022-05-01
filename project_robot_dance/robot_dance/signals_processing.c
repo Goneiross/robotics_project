@@ -116,6 +116,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 		if(mean_rms_derivative_fft <= abs_derivative){
 			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
+
 		}
 
 		if(wait10 == time_to_wait){
@@ -175,4 +176,5 @@ uint16_t get_music_pitch(){
 }
 
 uint16_t get_amplitude(){
+
 }
