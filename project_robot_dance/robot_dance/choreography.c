@@ -10,6 +10,7 @@
 #include <chprintf.h>
 #include <leds.h>
 #include <motors.h>
+// #include "motor.h"
 #include <spi_comm.h>
 
 #include "choreography.h"
@@ -42,7 +43,19 @@
 #define PITCH_4 1300
 #define PITCH_5 2500
 
+#define MOTOR_SPEED_LIMIT   13 // [cm/s]
+#define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
+#define NSTEP_ONE_EL_TURN   4  //number of steps to do 1 electrical turn
+#define NB_OF_PHASES        4  //number of phases of the motors
+#define WHEEL_PERIMETER     13 // [cm]
+#define PI                  3.1415926536f
+#define WHEEL_DISTANCE      5.35f    //cm
+#define PERIMETER_EPUCK     (PI * WHEEL_DISTANCE)
+#define POSITION_NOT_REACHED	0
+#define POSITION_REACHED       	1
+
 #define COLOR_HZ_RANGE 2000
+
 
 typedef enum {
 	ESCAPE_OBSTACLE,
@@ -90,6 +103,14 @@ typedef struct thd_motor_args
     int16_t speed_right;
 } thd_motor_args;
 
+typedef struct thd_motor_pos_args
+{
+    float position_r;
+    float position_l;
+    float speed_r;
+    float speed_l;
+} thd_motor_pos_args;
+
 void blink_LED1(int iterations, int delay_on, int delay_off);
 void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int play_type);
 void blink_LED3(int iterations, int delay_on, int delay_off);
@@ -103,6 +124,7 @@ void choose_and_set_RGB(rgb_led_name_t led_number);
 int choose_move(uint8_t old_move_nb);
 void escape_obstacle(void);
 void full_rotation(void);
+void motor_set_position(float position_r, float position_l, float speed_r, float speed_l);
 void move(int move_chosen);
 void move_backward(uint8_t time_s, int16_t speed);
 void move_forward(uint8_t time_s, int16_t speed);
@@ -110,9 +132,9 @@ void start_leds(void);
 void turn_around(void);
 void do_nothing(uint8_t time_s);
 
-
 static THD_WORKING_AREA(waThdDance, 256);
 static THD_WORKING_AREA(waThdMotor, 256);
+static THD_WORKING_AREA(waThdMotorPos, 1024);
 static THD_WORKING_AREA(waThdLedLED1, 256);
 static THD_WORKING_AREA(waThdLedLED2, 1024);
 static THD_WORKING_AREA(waThdLedLED3, 256);
@@ -128,6 +150,13 @@ static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
 
+static int16_t counter_step_right = 0;          // in [step]
+static int16_t counter_step_left = 0; 		    // in [step]
+static int16_t position_to_reach_right = 0;	    // in [step]
+static int16_t position_to_reach_left = 0;	    // in [step]
+static bool position_right_reached = 0;
+static bool position_left_reached = 0;
+static thd_motor_pos_args motor_pos_args;
 
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
@@ -161,6 +190,35 @@ static THD_FUNCTION(ThdMotor, arg) {
     chThdSleepMilliseconds((motor_info->time_s) * 1000);
     right_motor_set_speed(0);
     left_motor_set_speed(0);
+    move_done = true;
+    chThdExit(0);
+}
+
+
+static THD_FUNCTION(ThdMotorPos, arg) {
+    chRegSetThreadName(__FUNCTION__);
+    (void)arg;
+    thd_motor_pos_args *motor_pos_info = arg;
+    chprintf((BaseSequentialStream *)&SD3, "pos_r: %f pos_l: %f speed_r: %f\n", motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_l);
+    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_r, motor_pos_info->speed_l);
+    while ((position_right_reached == 0) || (position_left_reached == 0)){
+        if (position_right_reached == 0){
+            counter_step_right = right_motor_get_pos();
+            if (abs(counter_step_right) >= abs(position_to_reach_right)){
+                position_right_reached = 1;
+                right_motor_set_speed(0);
+            }
+        }
+        if (position_left_reached == 0){
+            counter_step_left = left_motor_get_pos();
+            if (abs(counter_step_left) >= abs(position_to_reach_left)){
+                position_left_reached = 1;
+                left_motor_set_speed(0);
+            }
+        }
+        chprintf((BaseSequentialStream *)&SD3, "position_get_r: %f, position_get_l: %f\n", counter_step_right, counter_step_left);
+        chThdSleepMilliseconds(10);
+    }
     move_done = true;
     chThdExit(0);
 }
@@ -564,6 +622,12 @@ int choose_move(uint8_t old_move_nb){
 */
 int choreography_init(){
     //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    //start_leds();
+    motor_pos_args.position_r = PERIMETER_EPUCK/2;
+    motor_pos_args.position_l = PERIMETER_EPUCK/2;
+    motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
+    motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
+    chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 
     spi_comm_start();
     start_leds();
@@ -579,12 +643,38 @@ void escape_obstacle(){
 
 /**
 * @brief DO a full rotation of the epuck
-*
-* @param iterations number of iterations to execute 
 */
 void full_rotation(){
-    // TO DO
-	move_done = true;
+    motor_args.time_s = DEFAULT_MOVE_TIME_S;
+	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
+	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+}
+
+/**
+* @brief Control motors in position
+*
+* @param position_r Position to go to for the right motor
+* @param position_l Position to go to for the left motor
+* @param speed_r Speed of the right motor
+* @param speed_l Speed of the left motor
+*/
+void motor_set_position(float position_r, float position_l, float speed_r, float speed_l){
+	//reinit global variable
+	counter_step_left = 0;
+	counter_step_right = 0;
+
+    position_right_reached = 0;
+    position_left_reached = 0;
+
+	//Set global variable with position to reach in step
+	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+
+	chprintf((BaseSequentialStream *)&SD3, "position_r: %f, position_l: %f, speed_r: %f, speed_l: %f\n", position_r, position_l, speed_r, speed_l);
+
+    right_motor_set_speed(speed_r);
+    left_motor_set_speed(speed_l);
 }
 
 /**
@@ -620,6 +710,9 @@ void move(int move_chosen){
 
 /**
 * @brief Move the epuck backward
+*
+* @param time_s Time in seconds to move backward
+* @param speed Speed chosen to move
 */
 void move_backward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
@@ -630,6 +723,9 @@ void move_backward(uint8_t time_s, int16_t speed){
 
 /**
 * @brief Move the epuck forward
+*
+* @param time_s Time in seconds to move forward
+* @param speed Speed chosen to move
 */
 void move_forward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
@@ -653,10 +749,17 @@ void start_leds(){
 * @brief Make the epuck turn around
 */
 void turn_around(){
-    // TO DO
-	move_done = true;
+    motor_args.time_s = DEFAULT_MOVE_TIME_S / 2;
+	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
+	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
+/**
+* @brief Make the epuck do nothing
+*
+* @param time_s Time to do nothing in seconds
+*/
 void do_nothing(uint8_t time_s){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = 0;
