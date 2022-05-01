@@ -158,6 +158,8 @@ static bool position_right_reached = 0;
 static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
 
+extern messagebus_t bus;
+
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;

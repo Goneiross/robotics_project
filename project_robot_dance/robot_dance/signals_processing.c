@@ -23,6 +23,9 @@ static float rms_frequency_old = 0;
 
 static float auto_correlation[2*WINDOW_SIZE];
 
+extern messagebus_t bus;
+static onset_msg_t onset_values;
+
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
 static THD_WORKING_AREA(waThdSignalsProcessing, 128);
@@ -63,6 +66,12 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	float abs_derivative = 0;
 	float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
+
+	messagebus_topic_t onset_topic;
+	MUTEX_DECL(onset_topic_lock);
+	CONDVAR_DECL(onset_topic_condvar);
+	messagebus_topic_init(&onset_topic, &onset_topic_lock, &onset_topic_condvar, &onset_values, sizeof(imu_values));
+	messagebus_advertise_topic(&bus, &imu_topic, "/imu");
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
 		if(input_number == false){

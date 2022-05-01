@@ -51,6 +51,7 @@ int main(void)
 
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
 
+
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
 	/* Main loop */
 
