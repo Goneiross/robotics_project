@@ -13,8 +13,8 @@
 
 #define DEBUG_LEVEL 0
 #define LED_IR_nb 8
-#define THRESHOLD_PROX_MIN 10 // MODIFIER CA !!! 
-#define THRESHOLD_PROX_MAX 1000 // MODIFIER CA !!! 
+#define THRESHOLD_PROX_MIN 100 // MODIFIER CA !!!
+#define THRESHOLD_PROX_MAX 10000 // MODIFIER CA !!!
 #define THRESHOLD_DIST 80
 #define P1 0.00017303
 #define P2 0.00054629
@@ -54,7 +54,7 @@ static THD_FUNCTION(ThdDetection, arg) {
 */
 void compute_distance(){
     for (int i = 0; i < LED_IR_nb; i++){
-        obstacle_dist[i] = 0;
+        obstacle_dist[i] = 255;
         if ((prox[i] > THRESHOLD_PROX_MIN) && (prox[i] < THRESHOLD_PROX_MAX)) {
             obstacle_dist[i] = (1/(float)prox[i] + P2)/P1;
             // 1/prox = p1*distance - p2
@@ -78,7 +78,9 @@ void debug_detection(int level){
     }
     if (level >= 3){
         for (int i = 0; i < LED_IR_nb; i++){
-            chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i],i ,obstacle_dist[i]);
+        	if(obstacle_dist[i]<255){
+        		chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i],i ,obstacle_dist[i]);
+        	}
         }
         chprintf((BaseSequentialStream *)&SD3, "\n");
     }
