@@ -128,7 +128,7 @@ void do_nothing(uint8_t time_s);
 
 static THD_WORKING_AREA(waThdDance, 256);
 static THD_WORKING_AREA(waThdMotor, 256);
-static THD_WORKING_AREA(waThdMotorPos, 256);
+static THD_WORKING_AREA(waThdMotorPos, 1024);
 static THD_WORKING_AREA(waThdLedLED1, 256);
 static THD_WORKING_AREA(waThdLedLED2, 256);
 static THD_WORKING_AREA(waThdLedLED3, 256);
@@ -193,22 +193,24 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
+    chprintf((BaseSequentialStream *)&SD3, "pos_r: %f pos_l: %f speed_r: %f\n", motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_l);
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_r, motor_pos_info->speed_l);
-    while ((position_right_reached == 0) && (position_left_reached == 0)){
+    while ((position_right_reached == 0) || (position_left_reached == 0)){
         if (position_right_reached == 0){
             counter_step_right = right_motor_get_pos();
-            if (counter_step_right >= position_to_reach_right){
+            if (abs(counter_step_right) >= abs(position_to_reach_right)){
                 position_right_reached = 1;
                 right_motor_set_speed(0);
             }
         }
         if (position_left_reached == 0){
             counter_step_left = left_motor_get_pos();
-            if (counter_step_left >= position_to_reach_left){
+            if (abs(counter_step_left) >= abs(position_to_reach_left)){
                 position_left_reached = 1;
                 left_motor_set_speed(0);
             }
         }
+        chprintf((BaseSequentialStream *)&SD3, "position_get_r: %f, position_get_l: %f\n", counter_step_right, counter_step_left);
         chThdSleepMilliseconds(10);
     }
     move_done = true;
@@ -587,9 +589,9 @@ int choreography_init(){
     //start_leds();
     motor_pos_args.position_r = PERIMETER_EPUCK/2;
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
-    motor_pos_args.speed_r = MOTOR_MEDIUM_SPEED;
+    motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
     motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
-    chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, NULL);
+    chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     return 0;
 }
 
@@ -628,7 +630,9 @@ void motor_set_position(float position_r, float position_l, float speed_r, float
 
 	//Set global variable with position to reach in step
 	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
-	position_to_reach_right = -position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+
+	chprintf((BaseSequentialStream *)&SD3, "position_r: %f, position_l: %f, speed_r: %f, speed_l: %f\n", position_r, position_l, speed_r, speed_l);
 
     right_motor_set_speed(speed_r);
     left_motor_set_speed(speed_l);

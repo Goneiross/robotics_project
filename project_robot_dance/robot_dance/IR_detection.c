@@ -11,7 +11,7 @@
 #include "choreography.h"
 #include "IR_detection.h"
 
-#define DEBUG_LEVEL 3
+#define DEBUG_LEVEL 0
 #define LED_IR_nb 8
 #define THRESHOLD_PROX_MIN 10 // MODIFIER CA !!! 
 #define THRESHOLD_PROX_MAX 1000 // MODIFIER CA !!! 
