@@ -3,19 +3,22 @@
 
 #include <stdint.h>
 #include <ch.h>
+#include <hal.h>
 #include <time.h>
+#include "memory_protection.h"
 
 #include <chprintf.h>
 #include <leds.h>
 #include <motors.h>
+#include <spi_comm.h>
 
 #include "choreography.h"
 #include "IR_detection.h"
 #include "signals_processing.h"
 
 #define MOVE_NB 4
-#define DEFAULT_BLINK_DELAY_ON 500
-#define DEFAULT_BLINK_DELAY_OFF 500
+#define DEFAULT_BLINK_DELAY_ON 50
+#define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 10
 #define DEFAULT_ROTATION_ITERATION 1
 #define DEFAULT_MOVE_TIME_S 3
@@ -38,6 +41,8 @@
 #define PITCH_3 630
 #define PITCH_4 1300
 #define PITCH_5 2500
+
+#define COLOR_HZ_RANGE 2000
 
 typedef enum {
 	ESCAPE_OBSTACLE,
@@ -109,7 +114,7 @@ void do_nothing(uint8_t time_s);
 static THD_WORKING_AREA(waThdDance, 256);
 static THD_WORKING_AREA(waThdMotor, 256);
 static THD_WORKING_AREA(waThdLedLED1, 256);
-static THD_WORKING_AREA(waThdLedLED2, 256);
+static THD_WORKING_AREA(waThdLedLED2, 1024);
 static THD_WORKING_AREA(waThdLedLED3, 256);
 static THD_WORKING_AREA(waThdLedLED4, 256);
 static THD_WORKING_AREA(waThdLedLED5, 256);
@@ -386,6 +391,36 @@ void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
 */
 void choose_and_set_RGB(rgb_led_name_t led_number){
     uint16_t pitch = get_music_pitch();
+    uint8_t r = 255;
+    uint8_t g = 255;
+    uint8_t b = 255;
+    /*if(pitch < COLOR_HZ_RANGE/6){
+    	g =0;
+    	b = (pitch * 6 * 255) / COLOR_HZ_RANGE;
+    } else if(pitch < 2*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
+
+    } else if(pitch< 3*COLOR_HZ_RANGE/6){
+    	r = 0;
+    	g = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
+    } else if(pitch < 4*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
+
+    } else if(pitch < 5*COLOR_HZ_RANGE/6){
+    	r=0;
+    	g=0;
+    	b=0;
+
+    } else if(pitch < COLOR_HZ_RANGE){
+    	r=0;
+    	g=0;
+    	b=0;
+    }
+    set_rgb_led(led_number, r, g , b);*/
     if (pitch < PITCH_0 ) {
         set_rgb_led(led_number, 255, 0 , 0);
     } else if (pitch < PITCH_1) {
@@ -400,7 +435,7 @@ void choose_and_set_RGB(rgb_led_name_t led_number){
         set_rgb_led(led_number, 75, 0, 130);
     } else {
         set_rgb_led(led_number, 148, 0, 211);
-    }  
+    }
 }
 
 /**
@@ -528,8 +563,10 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    //start_leds();
+    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+
+    spi_comm_start();
+    start_leds();
     return 0;
 }
 
@@ -606,10 +643,10 @@ void move_forward(uint8_t time_s, int16_t speed){
 */
 void start_leds(){
     rgb initial_rgb = {0, 0 ,0};
-    blink_LED2(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED4(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED6(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-    blink_LED8(-1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED2(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED4(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED6(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+    blink_LED8(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
 }
 
 /**
