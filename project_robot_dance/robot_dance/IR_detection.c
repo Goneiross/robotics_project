@@ -15,7 +15,7 @@
 #define LED_IR_nb 8
 #define THRESHOLD_PROX_MIN 10 // MODIFIER CA !!! 
 #define THRESHOLD_PROX_MAX 1000 // MODIFIER CA !!! 
-#define THRESHOLD_DIST 80
+#define THRESHOLD_DIST 40
 #define P1 0.00017303
 #define P2 0.00054629
 
@@ -104,11 +104,11 @@ int detection_init(){
 * @return Bool true if obstacle
 */
 bool is_obstacle(){
-    /*for (int i = 0; i < LED_IR_nb; i++){
+    for (int i = 0; i < LED_IR_nb; i++){
         if (obstacle_dist[i] < THRESHOLD_DIST) {
             return true;
         }
-    }*/
+    }
     return false;
 }
 

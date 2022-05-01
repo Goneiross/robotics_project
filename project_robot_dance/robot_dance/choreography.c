@@ -621,14 +621,7 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    //start_leds();
-    motor_pos_args.position_r = PERIMETER_EPUCK/2;
-    motor_pos_args.position_l = PERIMETER_EPUCK/2;
-    motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
-    motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
-    chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-
+    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -639,6 +632,55 @@ int choreography_init(){
 */
 void escape_obstacle(){
     update_obstacle_array(obstacle);
+    if (obstacle[0] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
+        motor_pos_args.speed_r = MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = -MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[1] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
+        motor_pos_args.speed_r = MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = -MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[2] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4;
+        motor_pos_args.speed_r = MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = -MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[3] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/16;
+        motor_pos_args.position_l = PERIMETER_EPUCK/16;
+        motor_pos_args.speed_r = MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = -MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[4] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/16;
+        motor_pos_args.position_l = PERIMETER_EPUCK/16;
+        motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[5] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4;
+        motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[6] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
+        motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    } else if (obstacle[7] == true){
+        motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
+        motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
+        motor_pos_args.speed_r = -MOTOR_MEDIUM_SPEED;
+        motor_pos_args.speed_l = MOTOR_MEDIUM_SPEED;
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    }
 }
 
 /**
