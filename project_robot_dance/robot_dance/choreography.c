@@ -127,6 +127,7 @@ void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off);
 void choose_and_set_RGB(rgb_led_name_t led_number);
 uint16_t choose_motor_speed();
 int choose_move(uint8_t old_move_nb);
+void do_nothing(uint8_t time_s);
 void escape_obstacle(void);
 void full_rotation(void);
 void motor_set_position(float position_r, float position_l, float speed_r, float speed_l);
@@ -136,7 +137,6 @@ void move_forward(uint8_t time_s, int16_t speed);
 void start_leds(void);
 void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
-void do_nothing(uint8_t time_s);
 
 static THD_WORKING_AREA(waThdDance, 256);
 static THD_WORKING_AREA(waThdMotor, 256);
@@ -651,6 +651,18 @@ int choreography_init(){
 }
 
 /**
+* @brief Make the epuck do nothing
+*
+* @param time_s Time to do nothing in seconds
+*/
+void do_nothing(uint8_t time_s){
+	motor_args.time_s = time_s;
+	motor_args.speed_left = 0;
+	motor_args.speed_right = 0;
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+}
+
+/**
 * @brief Try to escape the nearest obstacle
 */
 void escape_obstacle(){
@@ -838,20 +850,14 @@ void turn_around(){
     chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
+/**
+* @brief Update the interval between LED blinks depending on music tempo
+*
+* @param delay_on Delay, for the LED to be on, to update
+* @param delay_ff Delay, for the LED to be off, to update
+*/
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
     *delay_on = delay;
     *delay_off = delay;
-}
-
-/**
-* @brief Make the epuck do nothing
-*
-* @param time_s Time to do nothing in seconds
-*/
-void do_nothing(uint8_t time_s){
-	motor_args.time_s = time_s;
-	motor_args.speed_left = 0;
-	motor_args.speed_right = 0;
-    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
