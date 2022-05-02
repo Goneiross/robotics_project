@@ -82,16 +82,16 @@ typedef struct thd_led_args
 {
     int led;
     int iterations;
-    int delay_on;
-    int delay_off;
+    uint16_t delay_on;
+    uint16_t delay_off;
 } thd_led_args;
 
 typedef struct thd_rgb_led_args
 {
     rgb_led_name_t led;
     int iterations;
-    int delay_on;
-    int delay_off;
+    uint16_t delay_on;
+    uint16_t delay_off;
     rgb colour;
     led_play_type led_play_type;
 } thd_rgb_led_args;
@@ -112,15 +112,15 @@ typedef struct thd_motor_pos_args
     bool do_not_validate_done;
 } thd_motor_pos_args;
 
-void blink_LED1(int iterations, int delay_on, int delay_off);
-void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int play_type);
-void blink_LED3(int iterations, int delay_on, int delay_off);
-void blink_LED4(int iterations, int delay_on, int delay_off, rgb colour, int play_type);
-void blink_LED5(int iterations, int delay_on, int delay_off);
-void blink_LED6(int iterations, int delay_on, int delay_off, rgb colour, int play_type);
-void blink_LED7(int iterations, int delay_on, int delay_off);
-void blink_LED_BODY(int iterations, int delay_on, int delay_off);
-void blink_LED_FRONT(int iterations, int delay_on, int delay_off);
+void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED2(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED3(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off);
 void choose_and_set_RGB(rgb_led_name_t led_number);
 int choose_move(uint8_t old_move_nb);
 void escape_obstacle(void);
@@ -131,6 +131,7 @@ void move_backward(uint8_t time_s, int16_t speed);
 void move_forward(uint8_t time_s, int16_t speed);
 void start_leds(void);
 void turn_around(void);
+void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
 void do_nothing(uint8_t time_s);
 
 static THD_WORKING_AREA(waThdDance, 256);
@@ -256,6 +257,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led_info->led, 0, 0 , 0);
         while (1) {
+            update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
             chThdSleepMilliseconds(led_info->delay_off);
             choose_and_set_RGB(led_info->led);
             chThdSleepMilliseconds(led_info->delay_on);
@@ -275,7 +277,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED1(int iterations, int delay_on, int delay_off){
+void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED1;
     led_args.iterations = iterations;
@@ -293,7 +295,7 @@ void blink_LED1(int iterations, int delay_on, int delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+void blink_LED2(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED2;
     rgb_led_args.iterations = iterations;
@@ -311,7 +313,7 @@ void blink_LED2(int iterations, int delay_on, int delay_off, rgb colour, int pla
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED3(int iterations, int delay_on, int delay_off){
+void blink_LED3(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED3;
     led_args.iterations = iterations;
@@ -329,7 +331,7 @@ void blink_LED3(int iterations, int delay_on, int delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED4(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED4;
     rgb_led_args.iterations = iterations;
@@ -347,7 +349,7 @@ void blink_LED4(int iterations, int delay_on, int delay_off, rgb colour, int pla
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED5(int iterations, int delay_on, int delay_off){
+void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED5;
     led_args.iterations = iterations;
@@ -365,7 +367,7 @@ void blink_LED5(int iterations, int delay_on, int delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED6(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED6;
     rgb_led_args.iterations = iterations;
@@ -383,7 +385,7 @@ void blink_LED6(int iterations, int delay_on, int delay_off, rgb colour, int pla
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED7(int iterations, int delay_on, int delay_off){
+void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED7;
     led_args.iterations = iterations;
@@ -401,7 +403,7 @@ void blink_LED7(int iterations, int delay_on, int delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED8(int iterations, int delay_on, int delay_off, rgb colour, int play_type){
+void blink_LED8(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED8;
     rgb_led_args.iterations = iterations;
@@ -419,7 +421,7 @@ void blink_LED8(int iterations, int delay_on, int delay_off, rgb colour, int pla
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED_BODY(int iterations, int delay_on, int delay_off){
+void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOB_LED_BODY;
     led_args.iterations = iterations;
@@ -435,7 +437,7 @@ void blink_LED_BODY(int iterations, int delay_on, int delay_off){
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED_FRONT(int iterations, int delay_on, int delay_off){
+void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED_FRONT;
     led_args.iterations = iterations;
@@ -810,6 +812,12 @@ void turn_around(){
 	motor_args.speed_left = -MOTOR_MEDIUM_SPEED;
 	motor_args.speed_right = +MOTOR_MEDIUM_SPEED;
     chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+}
+
+void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
+    uint16_t delay = get_music_interval();
+    *delay_on = delay;
+    *delay_off = delay;
 }
 
 /**

@@ -15,5 +15,6 @@ float* get_auto_correlation(void);
 void wait_send_to_computer(void);
 uint16_t get_music_tempo(void);
 uint16_t get_music_pitch(void);
+uint16_t get_music_interval(void);
 
 #endif
