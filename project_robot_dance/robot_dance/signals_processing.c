@@ -208,6 +208,9 @@ uint16_t get_music_interval(void){
 	uint16_t min_range = LOW_FILTER_CORR_I+WINDOW_SIZE;
 	uint16_t max_range = HIGH_FILTER_CORR_I+WINDOW_SIZE;
 	uint16_t music_interval = AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE);
+	if(music_interval > 2000){
+		music_interval = 2000;
+	}
 	return music_interval;
 }
 

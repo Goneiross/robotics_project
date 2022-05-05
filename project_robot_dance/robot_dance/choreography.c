@@ -177,35 +177,8 @@ static THD_FUNCTION(ThdDance, arg) {
     static uint8_t move_nb = 0;
     static uint8_t old_move_nb = 0;
     systime_t time;
-//    while(1){
-//    	if ((is_obstacle() == true) && (is_escaping == false)){
-//                escape_obstacle();
-//            } else if(move_done == true){
-//                pointer_thread_motor_pos = NULL;
-//                pointer_thread_motor = NULL;
-//                if (force_move_forward == true){
-//                    force_move_forward = false;
-//                    move_done = false;
-//                    move(MOVE_FORWARD);
-//                } else {
-//                    is_escaping = false; // METTRE AUTREPART ??
-//                    if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
-//                  old_move_nb = move_nb;
-//                }
-//                    move_nb = choose_move(old_move_nb);
-//                    chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
-//                    move_done = false;
-//                    move(move_nb);// pas random pour l'instant
-//                }
-//          }
-//
-//            time = chVTGetSystemTime();
-//            chThdSleepUntilWindowed(time, time + MS2ST(10));
-//        }
     while(1){
-    	chprintf((BaseSequentialStream *)&SD3, "is obstacle: %d, is escaping: %d \n", is_obstacle(), is_escaping);
     	if ((is_obstacle() == true) && (is_escaping == false)){
-    		chprintf((BaseSequentialStream *)&SD3, "is obstacle et is_escaping \n");
     		move_done = false;
     		escape_obstacle();
     	} else if(move_done == true){
@@ -321,7 +294,9 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     thd_rgb_led_args *led_info = arg;
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led_info->led, 0, 0 , 0);
+        chprintf((BaseSequentialStream *)&SD3, " follow pitch mode \n");
         while (1) {
+        	chprintf((BaseSequentialStream *)&SD3, " delayoff: %d \n", &led_info->delay_off);
             update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
             chThdSleepMilliseconds(led_info->delay_off);
             choose_and_set_RGB(led_info->led);
@@ -943,6 +918,7 @@ void turn_around(){
 * @param delay_ff Delay, for the LED to be off, to update
 */
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
+	chprintf((BaseSequentialStream *)&SD3, " amplitude:%d, interval: %d \n", get_music_amplitude(), get_music_interval());
     uint16_t delay = get_music_interval();
     *delay_on = delay;
     *delay_off = delay;
