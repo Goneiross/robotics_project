@@ -156,7 +156,6 @@ static THD_WORKING_AREA(waThdLedBODY_LED, 256);
 static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
-static bool is_escaping = false;
 
 static int16_t counter_step_right = 0;          // in [step]
 static int16_t counter_step_left = 0; 		    // in [step]
@@ -168,9 +167,6 @@ static thd_motor_pos_args motor_pos_args;
 
 static bool force_move_forward = 0;
 
-static thread_t* pointer_thread_motor_pos = NULL;
-static thread_t* pointer_thread_motor = NULL;
-
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -178,24 +174,27 @@ static THD_FUNCTION(ThdDance, arg) {
     static uint8_t old_move_nb = 0;
     systime_t time;
     while(1){
+<<<<<<< HEAD
         if ((is_obstacle() == true) && (is_escaping == false)){
             escape_obstacle();
         } else if(move_done == true){
             pointer_thread_motor_pos = NULL;
             pointer_thread_motor = NULL;
+=======
+    	if(move_done == true){
+>>>>>>> parent of a25ee79 (Add interuption for escaping)
             if (force_move_forward == true){
                 force_move_forward = false;
                 move_done = false;
                 move(MOVE_FORWARD);
             } else {
-                is_escaping = false; // METTRE AUTREPART ??
                 if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
-    			    old_move_nb = move_nb;
-    		    }
-                move_nb = choose_move(old_move_nb);
-                chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
-                move_done = false;
-                move(move_nb);// pas random pour l'instant
+    			old_move_nb = move_nb;
+    		}
+            move_nb = choose_move(old_move_nb);
+            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
+    		move_done = false;
+    		move(move_nb);// pas random pour l'instant
             }
     	}
 
@@ -693,13 +692,14 @@ void do_nothing(uint8_t time_s){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = 0;
 	motor_args.speed_right = 0;
-    pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
 * @brief Try to escape the nearest obstacle
 */
 void escape_obstacle(){
+<<<<<<< HEAD
     is_escaping = true;
     if (pointer_thread_motor_pos != NULL){
         chThdTerminate(pointer_thread_motor_pos);
@@ -709,6 +709,8 @@ void escape_obstacle(){
         chThdTerminate(pointer_thread_motor);
         pointer_thread_motor = NULL;
     }
+=======
+>>>>>>> parent of a25ee79 (Add interuption for escaping)
     uint16_t motor_speed = choose_motor_speed();
     update_obstacle_array(obstacle);
     if (obstacle[0] == true){ // FAIRE AUTREMENT POUR CHOSIIR L'OBSTACLE À EVITER
@@ -717,7 +719,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[1] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
@@ -725,7 +727,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[2] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
@@ -733,7 +735,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[3] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
@@ -741,7 +743,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[4] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
@@ -749,7 +751,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[5] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
@@ -757,7 +759,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[6] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
@@ -765,7 +767,7 @@ void escape_obstacle(){
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[7] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
@@ -773,12 +775,11 @@ void escape_obstacle(){
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         force_move_forward = true;
-        pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else {
     	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
-        is_escaping = false;
     }
 }
 
@@ -790,7 +791,7 @@ void full_rotation(){
     motor_args.time_s = DEFAULT_MOVE_TIME_S;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
-    pointer_thread_motor_pos= chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
@@ -861,7 +862,7 @@ void move_backward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
-    pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
@@ -874,7 +875,7 @@ void move_forward(uint8_t time_s, int16_t speed){
 	motor_args.time_s = time_s;
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
-    pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
@@ -901,7 +902,7 @@ void turn_around(){
     motor_args.time_s = DEFAULT_MOVE_TIME_S / 2;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
-    pointer_thread_motor_pos = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
 /**
