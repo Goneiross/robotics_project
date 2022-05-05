@@ -138,11 +138,11 @@ void start_leds(void);
 void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
 
-static THD_WORKING_AREA(waThdDance, 256);
+static THD_WORKING_AREA(waThdDance, 1024);
 static THD_WORKING_AREA(waThdMotor, 256);
-static THD_WORKING_AREA(waThdMotorPos, 512);
+static THD_WORKING_AREA(waThdMotorPos, 1024);
 static THD_WORKING_AREA(waThdLedLED1, 256);
-static THD_WORKING_AREA(waThdLedLED2, 1024);
+static THD_WORKING_AREA(waThdLedLED2, 256);
 static THD_WORKING_AREA(waThdLedLED3, 256);
 static THD_WORKING_AREA(waThdLedLED4, 256);
 static THD_WORKING_AREA(waThdLedLED5, 256);
@@ -176,6 +176,8 @@ static THD_FUNCTION(ThdDance, arg) {
     			old_move_nb = move_nb;
     		}
             move_nb = choose_move(old_move_nb);
+            chThdSleepMilliseconds(1000);
+            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
     		move_done = false;
     		move(move_nb);// pas random pour l'instant
     	}
@@ -206,6 +208,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     thd_motor_pos_args *motor_pos_info = arg;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_r, motor_pos_info->speed_l);
     while ((position_right_reached == 0) || (position_left_reached == 0)){
+    	chprintf((BaseSequentialStream *)&SD3, "motor pos \n");
         if (position_right_reached == 0){
             counter_step_right = right_motor_get_pos();
             if (abs(counter_step_right) >= abs(position_to_reach_right)){
@@ -223,7 +226,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
         chThdSleepMilliseconds(10);
     }
     if (motor_pos_info->do_not_validate_done) {
-        move_done = false;
+        move_done = true;
         chThdExit(0);
     }
     move_done = true;
@@ -644,7 +647,7 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -667,71 +670,84 @@ void do_nothing(uint8_t time_s){
 */
 void escape_obstacle(){
     uint16_t motor_speed = choose_motor_speed();
+    chprintf((BaseSequentialStream *)&SD3, "avant uptade\n");
     update_obstacle_array(obstacle);
+    chprintf((BaseSequentialStream *)&SD3, "apres update\n");
     if (obstacle[0] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle0\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[1] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle1\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[2] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle2\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[3] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle3\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[4] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle4\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[5] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle5\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[6] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle6\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
     } else if (obstacle[7] == true){
+    	chprintf((BaseSequentialStream *)&SD3, "obstacle7\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
         motor_pos_args.do_not_validate_done = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        move_forward(1, motor_speed);
+        //move_forward(1, motor_speed);
+    } else {
+    	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
+    	move_done = true;
     }
 }
 
@@ -756,6 +772,8 @@ void full_rotation(){
 */
 void motor_set_position(float position_r, float position_l, float speed_r, float speed_l){
 	//reinit global variable
+	right_motor_set_pos(0);
+	left_motor_set_pos(0);
 	counter_step_left = 0;
 	counter_step_right = 0;
 
