@@ -184,7 +184,6 @@ static THD_FUNCTION(ThdDance, arg) {
     			old_move_nb = move_nb;
     		}
             move_nb = choose_move(old_move_nb);
-            // chThdSleepMilliseconds(1000);
             chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
     		move_done = false;
     		move(move_nb);// pas random pour l'instant
@@ -248,7 +247,7 @@ static THD_FUNCTION(ThdLed, arg) {
     while(1){
     	int led = led_info->led;
 		wait_onset();
-		if (led_info->led == GPIOB_LED_BODY){
+		if (led == GPIOB_LED_BODY){
 			gpio = GPIOB;
 		} else {
 			gpio = GPIOD;
@@ -468,6 +467,7 @@ void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param led_number The rgb_led_name_t of the led to use
 */
 void choose_and_set_RGB(rgb_led_name_t led_number){
+	chprintf((BaseSequentialStream *)&SD3, "amplitude %d\n",get_music_amplitude());
 	if(get_music_amplitude()>SOUND_AMP_MIN){
 		uint16_t pitch = get_music_pitch();
 		uint8_t r = 255;
@@ -524,7 +524,7 @@ void choose_and_set_RGB(rgb_led_name_t led_number){
 * @return the speed chosen for the motors
 */
 uint16_t choose_motor_speed(){
-    uint16_t tempo = get_music_tempo(); // FAIRE AUTREMENT QUE PLEIN DE GET TEMPO ?
+    uint8_t tempo = get_music_tempo(); // FAIRE AUTREMENT QUE PLEIN DE GET TEMPO ?
     uint16_t speed = tempo * TEMPO_SPEED_COEF;
     if (speed > MOTOR_MAX_SPEED){
         speed = MOTOR_MAX_SPEED;
@@ -545,7 +545,7 @@ int choose_move(uint8_t old_move_nb){
 	if (is_obstacle() == true){
         return ESCAPE_OBSTACLE;
     } else {
-        uint16_t tempo = get_music_tempo();
+        uint8_t tempo = get_music_tempo();
         uint8_t move = 0;
     	//uint8_t random = 1 + rand() % (MOVE_NB - 1);
         uint8_t random = 1 + rand() % 99; // Get a random number between 1 and 100
@@ -681,11 +681,8 @@ void do_nothing(uint8_t time_s){
 */
 void escape_obstacle(){
     uint16_t motor_speed = choose_motor_speed();
-    chprintf((BaseSequentialStream *)&SD3, "avant uptade\n");
-    update_obstacle_array(obstacle);
-    chprintf((BaseSequentialStream *)&SD3, "apres update\n");
+    update_obstacle_array(obstacle);;
     if (obstacle[0] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle0\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = motor_speed;
@@ -694,7 +691,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[1] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle1\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = motor_speed;
@@ -703,7 +699,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[2] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle2\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = motor_speed;
@@ -712,7 +707,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[3] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle3\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = motor_speed;
@@ -721,7 +715,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[4] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle4\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = -motor_speed;
@@ -730,7 +723,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[5] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle5\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = -motor_speed;
@@ -739,7 +731,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[6] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle6\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = -motor_speed;
@@ -748,7 +739,6 @@ void escape_obstacle(){
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[7] == true){
-    	chprintf((BaseSequentialStream *)&SD3, "obstacle7\n");
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = -motor_speed;

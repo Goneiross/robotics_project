@@ -48,7 +48,7 @@ int main(void)
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
 	motors_init();
 	detection_init();
-  signals_processing_init();
+	signals_processing_init();
 	choreography_init();
 
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
@@ -57,7 +57,7 @@ int main(void)
 
 	while(1){
 		uint16_t amp = get_music_amplitude();
-		chprintf((BaseSequentialStream *)&SD3, " amplitude:%d \n", amp);
+		//chprintf((BaseSequentialStream *)&SD3, " amplitude:%d \n", amp);
 
 		//arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE/2);
 		//arm_copy_f32(get_rms_frequencies(), send_rms, WINDOW_SIZE);

@@ -14,6 +14,8 @@
 #define HIGH_FILTER_INDEX 256
 #define AUDIO_PROCESS_TIME 69
 
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
+
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
 
@@ -171,7 +173,7 @@ void wait_onset(void){
 *
 * @return The uint_t of the index of the max
 */
-float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
 	uint16_t max_index = 0;
 	for(uint16_t i = min_range; i < max_range; i++){
 		if(array_buffer[i] > array_buffer[max_index]){
@@ -189,21 +191,24 @@ float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_r
 uint8_t get_music_tempo(void){
 	uint16_t min_range = 4+WINDOW_SIZE;
 	uint16_t max_range = 46+WINDOW_SIZE;
-	uint32_t tempo = ((float)60/(AUDIO_PROCESS_TIME*(float)(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE)));
+	//(find_maximum_index(auto_correlation, min_range, max_range)
+	uint8_t tempo = (uint8_t)((float)60/(float)((float)AUDIO_PROCESS_TIME/1000*2));
 	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
+	chprintf((BaseSequentialStream *)&SD3, "tempo: %d \n ", tempo);
 	return (uint8_t)(tempo);
 }
 
 /**
 * @brief get the tempo interval in time of what is recorded by the microphone
 *
-* @return float interval in ms
+* @return interval in ms
 */
-float get_music_interval(void){
+uint16_t get_music_interval(void){
 	uint16_t min_range = 4+WINDOW_SIZE;
 	uint16_t max_range = 46+WINDOW_SIZE;
-	float interval = (AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE));
-	return interval;
+	//AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE);
+	uint16_t music_interval = 200;
+	return music_interval;
 }
 
 //we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
@@ -216,10 +221,6 @@ uint16_t get_music_pitch(void){
 }
 
 uint16_t get_music_amplitude(void){
-	uint16_t amplitude = mic_output[get_music_pitch()];
-	return amplitude;
-}
-
-uint16_t get_music_interval(){
+	//uint16_t amplitude = mic_output[get_music_pitch()];
 	return 100;
 }
