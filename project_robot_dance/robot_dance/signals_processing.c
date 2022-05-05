@@ -5,10 +5,14 @@
 #include <chprintf.h>
 #include <arm_math.h>
 #include <arm_const_structs.h>
+#include <msgbus/messagebus.h>
 
 #include "signals_processing.h"
-#include "choreography.h"
 
+#define MIC_OUTPUT LEFT_OUTPUT
+#define LOW_FILTER_INDEX 8
+#define HIGH_FILTER_INDEX 256
+#define AUDIO_PROCESS_TIME 69
 
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
@@ -23,7 +27,10 @@ static float rms_frequency_old = 0;
 
 static float auto_correlation[2*WINDOW_SIZE];
 
-static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
+extern messagebus_t bus;
+static onset_msg_t onset_values;
+
+static BSEMAPHORE_DECL(onset_sem, TRUE);
 
 static THD_WORKING_AREA(waThdSignalsProcessing, 128);
 static THD_FUNCTION(ThdSignalsProcessing, arg) {
@@ -63,6 +70,13 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	float abs_derivative = 0;
 	float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
+
+	messagebus_topic_t onset_topic;
+	MUTEX_DECL(onset_topic_lock);
+	CONDVAR_DECL(onset_topic_condvar);
+	messagebus_topic_init(&onset_topic, &onset_topic_lock, &onset_topic_condvar, &onset_values, sizeof(onset_values));
+	messagebus_advertise_topic(&bus, &onset_topic, "/onset");
+	//chprintf((BaseSequentialStream *)&SD3, "bus depuis signal processing: %d \n ", bus);
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
 		if(input_number == false){
@@ -111,13 +125,15 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
 			}
 			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
-			chBSemSignal(&sendToComputer_sem);
 		}
-
+		onset_values.onset = false;
 		if(mean_rms_derivative_fft <= abs_derivative){
 			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
-
+			for(uint8_t i=0; i<4; i++){
+				chBSemSignal(&onset_sem);
+			}
 		}
+		//chprintf((BaseSequentialStream *)&SD3, "onset_values: %d \n ", onset_values.onset);
 
 		if(wait10 == time_to_wait){
 			wait10 = 0;
@@ -139,12 +155,19 @@ float* get_auto_correlation(void){
 	return auto_correlation;
 }
 
-void wait_send_to_computer(void){
-	chBSemWait(&sendToComputer_sem);
+/**
+* @brief wait for the onset to be detected and sent on the semaphore
+*/
+void wait_onset(void){
+	chBSemWait(&onset_sem);
 }
 
 /**
 * @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max
+*
+* @param array_buffer buffer from which the max value has to be found
+* @param min_range lower bound index to start searching from
+* @param max_range higher bound index to stop searching for it
 *
 * @return The uint_t of the index of the max
 */
@@ -158,16 +181,33 @@ float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_r
 	return max_index;
 }
 
-uint16_t get_music_tempo(){
+/**
+* @brief get the tempo in bpm of what is recorded by the microphone
+*
+* @return tempo
+*/
+uint8_t get_music_tempo(void){
 	uint16_t min_range = 4+WINDOW_SIZE;
 	uint16_t max_range = 46+WINDOW_SIZE;
-	uint32_t tempo = ((float)60/(0.069*(float)(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE)));
+	uint32_t tempo = ((float)60/(AUDIO_PROCESS_TIME*(float)(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE)));
 	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
-	return (uint16_t)(tempo);
+	return (uint8_t)(tempo);
+}
+
+/**
+* @brief get the tempo interval in time of what is recorded by the microphone
+*
+* @return float interval in ms
+*/
+float get_music_interval(void){
+	uint16_t min_range = 4+WINDOW_SIZE;
+	uint16_t max_range = 46+WINDOW_SIZE;
+	float interval = (AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE));
+	return interval;
 }
 
 //we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
-uint16_t get_music_pitch(){
+uint16_t get_music_pitch(void){
 	uint16_t min_range = LOW_FILTER_INDEX;
 	uint16_t max_range = HIGH_FILTER_INDEX;
 	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 15625;
@@ -175,6 +215,7 @@ uint16_t get_music_pitch(){
 	return (uint16_t)(frequency/1000);
 }
 
-uint16_t get_amplitude(){
-
+uint16_t get_music_amplitude(void){
+	uint16_t amplitude = mic_output[get_music_pitch()];
+	return amplitude;
 }
