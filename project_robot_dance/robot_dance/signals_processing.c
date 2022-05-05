@@ -17,6 +17,8 @@
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
 
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
+
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
 
@@ -174,7 +176,7 @@ void wait_onset(void){
 *
 * @return The uint_t of the index of the max
 */
-float find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
 	uint16_t max_index = 0;
 	for(uint16_t i = min_range; i < max_range; i++){
 		if(array_buffer[i] > array_buffer[max_index]){
@@ -200,9 +202,8 @@ uint8_t get_music_tempo(void){
 /**
 * @brief get the interval in time between two beats (periodicity of the music)
 *
-* @return float interval in ms
+* @return interval in ms
 */
-
 uint16_t get_music_interval(void){
 	uint16_t min_range = LOW_FILTER_CORR_I+WINDOW_SIZE;
 	uint16_t max_range = HIGH_FILTER_CORR_I+WINDOW_SIZE;
@@ -220,6 +221,6 @@ uint16_t get_music_pitch(void){
 }
 
 uint16_t get_music_amplitude(void){
-	uint16_t amplitude = mic_output[get_music_pitch()];
-	return amplitude;
+	//uint16_t amplitude = mic_output[get_music_pitch()];
+	return 100;
 }
