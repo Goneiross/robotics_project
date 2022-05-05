@@ -179,14 +179,6 @@ static THD_FUNCTION(ThdDance, arg) {
     systime_t time;
     while(1){
         if ((is_obstacle() == true) && (is_escaping == false)){
-            if (pointer_thread_motor_pos != NULL){
-                chThdTerminate(pointer_thread_motor_pos);
-                pointer_thread_motor_pos = NULL;
-            }
-            if (pointer_thread_motor != NULL){
-                chThdTerminate(pointer_thread_motor);
-                pointer_thread_motor = NULL;
-            }
             escape_obstacle();
         } else if(move_done == true){
             pointer_thread_motor_pos = NULL;
@@ -698,9 +690,17 @@ void do_nothing(uint8_t time_s){
 */
 void escape_obstacle(){
     is_escaping = true;
+    if (pointer_thread_motor_pos != NULL){
+        chThdTerminate(pointer_thread_motor_pos);
+        pointer_thread_motor_pos = NULL;
+    }
+    if (pointer_thread_motor != NULL){
+        chThdTerminate(pointer_thread_motor);
+        pointer_thread_motor = NULL;
+    }
     uint16_t motor_speed = choose_motor_speed();
-    update_obstacle_array(obstacle);;
-    if (obstacle[0] == true){
+    update_obstacle_array(obstacle);; 
+    if (obstacle[0] == true){ // FAIRE AUTREMENT POUR CHOSIIR L'OBSTACLE À EVITER
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = motor_speed;
