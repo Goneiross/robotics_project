@@ -10,9 +10,12 @@
 #include "signals_processing.h"
 
 #define MIC_OUTPUT LEFT_OUTPUT
-#define LOW_FILTER_INDEX 8
-#define HIGH_FILTER_INDEX 256
+#define LOW_FILTER_PITCH_I 8
+#define HIGH_FILTER_PITCH_I 256
+#define LOW_FILTER_CORR_I 4
+#define HIGH_FILTER_CORR_I 46
 #define AUDIO_PROCESS_TIME 69
+#define MINUTE_IN_MS 60000
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 
@@ -191,30 +194,27 @@ uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t ma
 uint8_t get_music_tempo(void){
 	uint16_t min_range = 4+WINDOW_SIZE;
 	uint16_t max_range = 46+WINDOW_SIZE;
-	//(find_maximum_index(auto_correlation, min_range, max_range)
-	uint8_t tempo = (uint8_t)((float)60/(float)((float)AUDIO_PROCESS_TIME/1000*2));
-	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
-	chprintf((BaseSequentialStream *)&SD3, "tempo: %d \n ", tempo);
-	return (uint8_t)(tempo);
+	uint16_t interval = get_music_interval();
+	uint8_t tempo = (uint8_t)((float)MINUTE_IN_MS/(float)interval);
+	return tempo;
 }
 
 /**
-* @brief get the tempo interval in time of what is recorded by the microphone
+* @brief get the interval in time between two beats (periodicity of the music)
 *
 * @return interval in ms
 */
 uint16_t get_music_interval(void){
-	uint16_t min_range = 4+WINDOW_SIZE;
-	uint16_t max_range = 46+WINDOW_SIZE;
-	//AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE);
-	uint16_t music_interval = 200;
+	uint16_t min_range = LOW_FILTER_CORR_I+WINDOW_SIZE;
+	uint16_t max_range = HIGH_FILTER_CORR_I+WINDOW_SIZE;
+	uint16_t music_interval = AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE);
 	return music_interval;
 }
 
 //we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
 uint16_t get_music_pitch(void){
-	uint16_t min_range = LOW_FILTER_INDEX;
-	uint16_t max_range = HIGH_FILTER_INDEX;
+	uint16_t min_range = LOW_FILTER_PITCH_I;
+	uint16_t max_range = HIGH_FILTER_PITCH_I;
 	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 15625;
 	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
 	return (uint16_t)(frequency/1000);
