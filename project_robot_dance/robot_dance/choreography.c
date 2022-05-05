@@ -211,7 +211,13 @@ static THD_FUNCTION(ThdMotor, arg) {
     thd_motor_args *motor_info = arg;
     right_motor_set_speed(motor_info->speed_right);
     left_motor_set_speed(motor_info->speed_left);
-    chThdSleepMilliseconds((motor_info->time_s) * 1000);
+    for (int i = 0; i < (motor_info->time_s) * 100; i++) { // OPTIMISER !!!
+        if (chThdShouldTerminate()){
+            chThdExit(0);
+        } else {
+            chThdSleepMilliseconds((motor_info->time_s) * 10);
+        }
+    }
     right_motor_set_speed(0);
     left_motor_set_speed(0);
     move_done = true;
@@ -225,22 +231,26 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     thd_motor_pos_args *motor_pos_info = arg;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_r, motor_pos_info->speed_l);
     while ((position_right_reached == 0) || (position_left_reached == 0)){
-    	chprintf((BaseSequentialStream *)&SD3, "motor pos \n");
-        if (position_right_reached == 0){
-            counter_step_right = right_motor_get_pos();
-            if (abs(counter_step_right) >= abs(position_to_reach_right)){
-                position_right_reached = 1;
-                right_motor_set_speed(0);
+        if (chThdShouldTerminate()){
+            chThdExit(0);
+        } else {
+            chprintf((BaseSequentialStream *)&SD3, "motor pos \n");
+            if (position_right_reached == 0){
+                counter_step_right = right_motor_get_pos();
+                if (abs(counter_step_right) >= abs(position_to_reach_right)){
+                    position_right_reached = 1;
+                    right_motor_set_speed(0);
+                }
             }
-        }
-        if (position_left_reached == 0){
-            counter_step_left = left_motor_get_pos();
-            if (abs(counter_step_left) >= abs(position_to_reach_left)){
-                position_left_reached = 1;
-                left_motor_set_speed(0);
+            if (position_left_reached == 0){
+                counter_step_left = left_motor_get_pos();
+                if (abs(counter_step_left) >= abs(position_to_reach_left)){
+                    position_left_reached = 1;
+                    left_motor_set_speed(0);
+                }
             }
+            chThdSleepMilliseconds(10);
         }
-        chThdSleepMilliseconds(10);
     }
     move_done = true;
     chThdExit(0);
@@ -263,7 +273,6 @@ static THD_FUNCTION(ThdLed, arg) {
 	}
     while(1){
 		wait_onset();
-		
 		palWritePad(gpio, led, 1); // First set on of the LED, should it be first off ? TO DO
 		for (int i = 0; i < iterations; i ++){ // int i or static int i ?? TO DO
 			//palTogglePad(gpio, led);
@@ -701,7 +710,7 @@ void escape_obstacle(){
         pointer_thread_motor = NULL;
     }
     uint16_t motor_speed = choose_motor_speed();
-    update_obstacle_array(obstacle);; 
+    update_obstacle_array(obstacle);
     if (obstacle[0] == true){ // FAIRE AUTREMENT POUR CHOSIIR L'OBSTACLE À EVITER
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
