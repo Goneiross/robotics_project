@@ -287,26 +287,28 @@ static THD_FUNCTION(ThdMotorPos, arg) {
 
 // SI fonctionne pas cf https://www.chibios.org/dokuwiki/doku.php?id=chibios:documentation:books:rt:kernel_threading TO DO
 static THD_FUNCTION(ThdLed, arg) {
- chRegSetThreadName(__FUNCTION__);
+	chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
-
+    int led = led_info->led;
+    uint16_t delay_off = led_info->delay_off;
+    uint16_t delay_on = led_info->delay_on;
+    int iterations = led_info->iterations;
+    if (led == GPIOB_LED_BODY){
+    	gpio = GPIOB;
+    } else {
+    	gpio = GPIOD;
+    }
     while(1){
-    	int led = led_info->led;
-		wait_onset();
-		if (led == GPIOB_LED_BODY){
-			gpio = GPIOB;
-		} else {
-			gpio = GPIOD;
-		}
+    	wait_onset();
 
 		palWritePad(gpio, led, 1); // First set on of the LED, should it be first off ? TO DO
-		for (int i = 0; i < led_info->iterations; i ++){ // int i or static int i ?? TO DO
+		for (int i = 0; i < iterations; i ++){ // int i or static int i ?? TO DO
 			//palTogglePad(gpio, led);
-			chThdSleepMilliseconds(led_info->delay_off);
+			chThdSleepMilliseconds(delay_off);
 			palWritePad(gpio, led, 0);
-			chThdSleepMilliseconds(led_info->delay_on);
+			chThdSleepMilliseconds(delay_on);
 			palWritePad(gpio, led, 1);
 		}
     }
