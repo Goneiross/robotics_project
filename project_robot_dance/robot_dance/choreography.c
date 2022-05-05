@@ -112,7 +112,6 @@ typedef struct thd_motor_pos_args
     float position_l;
     float speed_r;
     float speed_l;
-    bool do_not_validate_done;
 } thd_motor_pos_args;
 
 void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off);
@@ -164,6 +163,8 @@ static bool position_right_reached = 0;
 static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
 
+static bool force_move_forward = 0;
+
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -172,14 +173,20 @@ static THD_FUNCTION(ThdDance, arg) {
     systime_t time;
     while(1){
     	if(move_done == true){
-    		if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
+            if (force_move_forward == true){
+                force_move_forward = false;
+                move_done = false;
+                move(MOVE_FORWARD);
+            } else {
+                if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
     			old_move_nb = move_nb;
     		}
             move_nb = choose_move(old_move_nb);
-            chThdSleepMilliseconds(1000);
+            // chThdSleepMilliseconds(1000);
             chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
     		move_done = false;
     		move(move_nb);// pas random pour l'instant
+            }
     	}
 
         time = chVTGetSystemTime();
@@ -224,10 +231,6 @@ static THD_FUNCTION(ThdMotorPos, arg) {
             }
         }
         chThdSleepMilliseconds(10);
-    }
-    if (motor_pos_info->do_not_validate_done) {
-        move_done = true;
-        chThdExit(0);
     }
     move_done = true;
     chThdExit(0);
@@ -679,7 +682,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[1] == true){
@@ -688,7 +691,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[2] == true){
@@ -697,7 +700,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[3] == true){
@@ -706,7 +709,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = motor_speed;
         motor_pos_args.speed_l = -motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[4] == true){
@@ -715,7 +718,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[5] == true){
@@ -724,7 +727,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[6] == true){
@@ -733,7 +736,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else if (obstacle[7] == true){
@@ -742,7 +745,7 @@ void escape_obstacle(){
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_r = -motor_speed;
         motor_pos_args.speed_l = motor_speed;
-        motor_pos_args.do_not_validate_done = true;
+        force_move_forward = true;
         chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         //move_forward(1, motor_speed);
     } else {
