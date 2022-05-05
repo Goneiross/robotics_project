@@ -12,6 +12,7 @@
 #include <motors.h>
 // #include "motor.h"
 #include <spi_comm.h>
+#include <msgbus/messagebus.h>
 
 #include "choreography.h"
 #include "IR_detection.h"
@@ -29,6 +30,8 @@
 #define MOTOR_LOW_SPEED 500
 #define MOTOR_TURTLE_SPEED 100
 #define MOTOR_MIN_SPEED 100
+
+#define SOUND_AMP_MIN 60
 
 #define TEMPO_0 60
 #define TEMPO_1 80
@@ -58,7 +61,6 @@
 #define POSITION_REACHED       	1
 
 #define COLOR_HZ_RANGE 2000
-
 
 typedef enum {
 	ESCAPE_OBSTACLE,
@@ -242,21 +244,25 @@ static THD_FUNCTION(ThdLed, arg) {
     (void)arg;
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
-    int led = led_info->led;
-    if (led_info->led == GPIOB_LED_BODY){
-        gpio = GPIOB;
-    } else {
-        gpio = GPIOD;
+
+    while(1){
+    	int led = led_info->led;
+		wait_onset();
+		if (led_info->led == GPIOB_LED_BODY){
+			gpio = GPIOB;
+		} else {
+			gpio = GPIOD;
+		}
+
+		palWritePad(gpio, led, 1); // First set on of the LED, should it be first off ? TO DO
+		for (int i = 0; i < led_info->iterations; i ++){ // int i or static int i ?? TO DO
+			//palTogglePad(gpio, led);
+			chThdSleepMilliseconds(led_info->delay_off);
+			palWritePad(gpio, led, 0);
+			chThdSleepMilliseconds(led_info->delay_on);
+			palWritePad(gpio, led, 1);
+		}
     }
-    palWritePad(gpio, led, 1); // First set on of the LED, should it be first off ? TO DO
-    for (int i = 0; i < led_info->iterations; i ++){ // int i or static int i ?? TO DO
-        //palTogglePad(gpio, led);
-        chThdSleepMilliseconds(led_info->delay_off);
-        palWritePad(gpio, led, 0);
-        chThdSleepMilliseconds(led_info->delay_on);
-        palWritePad(gpio, led, 1); 
-    }
-    move_done = true;
     chThdExit(0);
 }
 
@@ -462,52 +468,54 @@ void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param led_number The rgb_led_name_t of the led to use
 */
 void choose_and_set_RGB(rgb_led_name_t led_number){
-    uint16_t pitch = get_music_pitch();
-    uint8_t r = 255;
-    uint8_t g = 255;
-    uint8_t b = 255;
-    /*if(pitch < COLOR_HZ_RANGE/6){
-    	g =0;
-    	b = (pitch * 6 * 255) / COLOR_HZ_RANGE;
-    } else if(pitch < 2*COLOR_HZ_RANGE/6){
-    	r=0;
-    	g=0;
-    	b=0;
+	if(get_music_amplitude()>SOUND_AMP_MIN){
+		uint16_t pitch = get_music_pitch();
+		uint8_t r = 255;
+		uint8_t g = 255;
+		uint8_t b = 255;
+		/*if(pitch < COLOR_HZ_RANGE/6){
+			g =0;
+			b = (pitch * 6 * 255) / COLOR_HZ_RANGE;
+		} else if(pitch < 2*COLOR_HZ_RANGE/6){
+			r=0;
+			g=0;
+			b=0;
 
-    } else if(pitch< 3*COLOR_HZ_RANGE/6){
-    	r = 0;
-    	g = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
-    } else if(pitch < 4*COLOR_HZ_RANGE/6){
-    	r=0;
-    	g=0;
-    	b=0;
+		} else if(pitch< 3*COLOR_HZ_RANGE/6){
+			r = 0;
+			g = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
+		} else if(pitch < 4*COLOR_HZ_RANGE/6){
+			r=0;
+			g=0;
+			b=0;
 
-    } else if(pitch < 5*COLOR_HZ_RANGE/6){
-    	r=0;
-    	g=0;
-    	b=0;
+		} else if(pitch < 5*COLOR_HZ_RANGE/6){
+			r=0;
+			g=0;
+			b=0;
 
-    } else if(pitch < COLOR_HZ_RANGE){
-    	r=0;
-    	g=0;
-    	b=0;
-    }
-    set_rgb_led(led_number, r, g , b);*/
-    if (pitch < PITCH_0 ) {
-        set_rgb_led(led_number, 255, 0 , 0);
-    } else if (pitch < PITCH_1) {
-        set_rgb_led(led_number, 255, 127, 0);
-    } else if (pitch < PITCH_2) {
-        set_rgb_led(led_number, 255, 255, 0);
-    } else if (pitch < PITCH_3) {
-        set_rgb_led(led_number, 0, 255, 0);
-    } else if (pitch < PITCH_4) {
-        set_rgb_led(led_number, 0, 0, 255);
-    } else if (pitch < PITCH_5) {
-        set_rgb_led(led_number, 75, 0, 130);
-    } else {
-        set_rgb_led(led_number, 148, 0, 211);
-    }
+		} else if(pitch < COLOR_HZ_RANGE){
+			r=0;
+			g=0;
+			b=0;
+		}
+		set_rgb_led(led_number, r, g , b);*/
+		if (pitch < PITCH_0 ) {
+			set_rgb_led(led_number, 255, 0 , 0);
+		} else if (pitch < PITCH_1) {
+			set_rgb_led(led_number, 255, 127, 0);
+		} else if (pitch < PITCH_2) {
+			set_rgb_led(led_number, 255, 255, 0);
+		} else if (pitch < PITCH_3) {
+			set_rgb_led(led_number, 0, 255, 0);
+		} else if (pitch < PITCH_4) {
+			set_rgb_led(led_number, 0, 0, 255);
+		} else if (pitch < PITCH_5) {
+			set_rgb_led(led_number, 75, 0, 130);
+		} else {
+			set_rgb_led(led_number, 148, 0, 211);
+		}
+	}
 }
 
 /**
@@ -858,6 +866,11 @@ void start_leds(){
     blink_LED4(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
     blink_LED6(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
     blink_LED8(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
+
+    blink_LED1(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED3(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED5(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED7(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
 }
 
 /**

@@ -44,20 +44,20 @@ int main(void)
 
 	serial_start();
 	usb_start();
+  
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
 	motors_init();
 	detection_init();
+  signals_processing_init();
 	choreography_init();
-	/* Bus init */
 
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
 	/* Main loop */
 
-	signals_processing_init();
 
 	while(1){
-		wait_send_to_computer();
-		//chprintf((BaseSequentialStream *)&SD3, "pitch max: %d, tempo:%d \n", pitch, tempo);
+		uint16_t amp = get_music_amplitude();
+		chprintf((BaseSequentialStream *)&SD3, " amplitude:%d \n", amp);
 
 		//arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE/2);
 		//arm_copy_f32(get_rms_frequencies(), send_rms, WINDOW_SIZE);
