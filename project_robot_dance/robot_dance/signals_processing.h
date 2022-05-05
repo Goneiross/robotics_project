@@ -17,10 +17,8 @@ float* get_rms_frequencies(void);
 float* get_auto_correlation(void);
 void wait_onset(void);
 uint8_t get_music_tempo(void);
-float get_music_interval(void);
 uint16_t get_music_pitch(void);
+uint16_t get_music_interval(void);
 uint16_t get_music_amplitude(void);
-
-
 
 #endif

@@ -219,3 +219,7 @@ uint16_t get_music_amplitude(void){
 	uint16_t amplitude = mic_output[get_music_pitch()];
 	return amplitude;
 }
+
+uint16_t get_music_interval(){
+	return 100;
+}

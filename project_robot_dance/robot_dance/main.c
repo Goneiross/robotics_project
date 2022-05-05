@@ -44,14 +44,13 @@ int main(void)
 
 	serial_start();
 	usb_start();
-	//messagebus_init(&bus, &bus_lock, &bus_condvar);
-	motors_init();
-	//detection_init();
-	signals_processing_init();
-	choreography_init();
-	/* Bus init */
+  
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
-	chprintf((BaseSequentialStream *)&SD3, "bus depuis main: %d \n ", bus);
+	motors_init();
+	detection_init();
+  signals_processing_init();
+	choreography_init();
+
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
 	/* Main loop */
 
