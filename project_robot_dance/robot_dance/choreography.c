@@ -174,15 +174,7 @@ static THD_FUNCTION(ThdDance, arg) {
     static uint8_t old_move_nb = 0;
     systime_t time;
     while(1){
-<<<<<<< HEAD
-        if ((is_obstacle() == true) && (is_escaping == false)){
-            escape_obstacle();
-        } else if(move_done == true){
-            pointer_thread_motor_pos = NULL;
-            pointer_thread_motor = NULL;
-=======
     	if(move_done == true){
->>>>>>> parent of a25ee79 (Add interuption for escaping)
             if (force_move_forward == true){
                 force_move_forward = false;
                 move_done = false;
@@ -699,18 +691,6 @@ void do_nothing(uint8_t time_s){
 * @brief Try to escape the nearest obstacle
 */
 void escape_obstacle(){
-<<<<<<< HEAD
-    is_escaping = true;
-    if (pointer_thread_motor_pos != NULL){
-        chThdTerminate(pointer_thread_motor_pos);
-        pointer_thread_motor_pos = NULL;
-    }
-    if (pointer_thread_motor != NULL){
-        chThdTerminate(pointer_thread_motor);
-        pointer_thread_motor = NULL;
-    }
-=======
->>>>>>> parent of a25ee79 (Add interuption for escaping)
     uint16_t motor_speed = choose_motor_speed();
     update_obstacle_array(obstacle);
     if (obstacle[0] == true){ // FAIRE AUTREMENT POUR CHOSIIR L'OBSTACLE À EVITER
