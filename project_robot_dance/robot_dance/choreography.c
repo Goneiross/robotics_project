@@ -63,6 +63,9 @@
 
 #define COLOR_HZ_RANGE 2000
 
+/**
+* @brief Structure définissant les différents move
+*/
 typedef enum {
 	ESCAPE_OBSTACLE,
     MOVE_FORWARD,
@@ -72,11 +75,17 @@ typedef enum {
     DO_NOTHING,
 } move_type;
 
+/**
+* @brief Structure définissant les modes de gestion des LEDS
+*/
 typedef enum {
 	FOLLOW_PITCH,
     MANUAL,
 } led_play_type;
 
+/**
+* @brief Structure définissant une couleur en RGB
+*/
 typedef struct rgb
 {
     uint8_t r;
@@ -84,6 +93,9 @@ typedef struct rgb
     uint8_t b;
 } rgb;
 
+/**
+* @brief Structure pour passer en arguments au ThdLed
+*/
 typedef struct thd_led_args
 {
     int led;
@@ -92,6 +104,9 @@ typedef struct thd_led_args
     uint16_t delay_off;
 } thd_led_args;
 
+/**
+* @brief Structure pour passer en arguments au ThdRGBLed
+*/
 typedef struct thd_rgb_led_args
 {
     rgb_led_name_t led;
@@ -102,6 +117,9 @@ typedef struct thd_rgb_led_args
     led_play_type led_play_type;
 } thd_rgb_led_args;
 
+/**
+* @brief Structure pour passer en arguments au ThdMotor
+*/
 typedef struct thd_motor_args
 {
     uint16_t time_ms;
@@ -109,6 +127,9 @@ typedef struct thd_motor_args
     int16_t speed_right;
 } thd_motor_args;
 
+/**
+* @brief Structure pour passer en arguments au ThdMotorPos
+*/
 typedef struct thd_motor_pos_args
 {
     float position_r;
