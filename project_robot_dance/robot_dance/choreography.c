@@ -24,6 +24,7 @@
 #define DEFAULT_BLINK_ITERATION 10
 #define DEFAULT_ROTATION_ITERATION 1
 #define DEFAULT_MOVE_TIME_S 3
+#define DEFAULT_MOVE_TIME_MS 3000
 #define MOTOR_MAX_SPEED 2200
 #define MOTOR_HIGH_SPEED 1800
 #define MOTOR_MEDIUM_SPEED 1100
@@ -103,7 +104,7 @@ typedef struct thd_rgb_led_args
 
 typedef struct thd_motor_args
 {
-    uint8_t time_s;
+    uint16_t time_ms;
     int16_t speed_left;
     int16_t speed_right;
 } thd_motor_args;
@@ -129,13 +130,13 @@ void cancel_moves(void);
 void choose_and_set_RGB(rgb_led_name_t led_number);
 uint16_t choose_motor_speed();
 int choose_move(uint8_t old_move_nb);
-void do_nothing(uint8_t time_s);
+void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
 void motor_set_position(float position_r, float position_l, float speed_r, float speed_l);
 void move(int move_chosen);
-void move_backward(uint8_t time_s, int16_t speed);
-void move_forward(uint8_t time_s, int16_t speed);
+void move_backward(uint16_t time_ms, int16_t speed);
+void move_forward(uint16_t time_ms, int16_t speed);
 void start_leds(void);
 void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
@@ -214,7 +215,7 @@ static THD_FUNCTION(ThdEscape, arg) {
                     chThdSleepMilliseconds(10);
                 }
                 motor_speed = choose_motor_speed(); // Garder ici ?
-                move_forward(1, motor_speed); // Changer à 0.5s
+                move_forward(500, motor_speed);
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
@@ -239,7 +240,7 @@ static THD_FUNCTION(ThdMotor, arg) {
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
-			chThdSleepMilliseconds((motor_info->time_s) * 10); // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
+			chThdSleepMilliseconds((motor_info->time_ms) / 100); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
     	}
 		i++;
     }
@@ -737,10 +738,10 @@ int choreography_init(){
 /**
 * @brief Make the epuck do nothing
 *
-* @param time_s Time to do nothing in seconds
+* @param time_ms Time to do nothing in milliseconds
 */
-void do_nothing(uint8_t time_s){
-	motor_args.time_s = time_s;
+void do_nothing(uint16_t time_ms){
+	motor_args.time_ms = time_ms;
 	motor_args.speed_left = 0;
 	motor_args.speed_right = 0;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
@@ -812,7 +813,7 @@ void escape_obstacle(){
 */
 void full_rotation(){
     uint16_t motor_speed = choose_motor_speed();
-    motor_args.time_s = DEFAULT_MOVE_TIME_S;
+    motor_args.time_ms = DEFAULT_MOVE_TIME_MS;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
@@ -858,10 +859,10 @@ void move(int move_chosen){
 //        escape_obstacle();
 //        break;
     case MOVE_FORWARD:
-        move_forward(DEFAULT_MOVE_TIME_S, motor_speed);
+        move_forward(DEFAULT_MOVE_TIME_MS, motor_speed);
         break;
     case MOVE_BACKWARD:
-        move_backward(DEFAULT_MOVE_TIME_S, motor_speed);
+        move_backward(DEFAULT_MOVE_TIME_MS, motor_speed);
         break;
     case FULL_ROTATION:
         full_rotation();
@@ -870,7 +871,7 @@ void move(int move_chosen){
         turn_around();
         break;
     case DO_NOTHING:
-        do_nothing(DEFAULT_MOVE_TIME_S);
+        do_nothing(DEFAULT_MOVE_TIME_MS);
         break;
     default:
         break;
@@ -880,11 +881,11 @@ void move(int move_chosen){
 /**
 * @brief Move the epuck backward
 *
-* @param time_s Time in seconds to move backward
+* @param time_ms Time in milliseconds to move backward
 * @param speed Speed chosen to move
 */
-void move_backward(uint8_t time_s, int16_t speed){
-	motor_args.time_s = time_s;
+void move_backward(uint16_t time_ms, int16_t speed){
+	motor_args.time_ms = time_ms;
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
@@ -893,11 +894,11 @@ void move_backward(uint8_t time_s, int16_t speed){
 /**
 * @brief Move the epuck forward
 *
-* @param time_s Time in seconds to move forward
+* @param time_ms Time in milliseconds to move forward
 * @param speed Speed chosen to move
 */
-void move_forward(uint8_t time_s, int16_t speed){
-	motor_args.time_s = time_s;
+void move_forward(uint16_t time_ms, int16_t speed){
+	motor_args.time_ms = time_ms;
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
@@ -924,7 +925,7 @@ void start_leds(){
 */
 void turn_around(){
     uint16_t motor_speed = choose_motor_speed();
-    motor_args.time_s = DEFAULT_MOVE_TIME_S / 2;
+    motor_args.time_ms = DEFAULT_MOVE_TIME_MS / 2;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
