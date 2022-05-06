@@ -181,19 +181,14 @@ static THD_FUNCTION(ThdDance, arg) {
     static uint8_t old_move_nb = 0;
     systime_t time;
     while(1){
-    	if ((is_obstacle() == true) && (is_escaping == false)){
-            is_escaping = true;
-            move_done = false; // Nécessaire ?
-            chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
-    	} else if((move_done == true) && (is_escaping == false)){
+    	if((move_done == true) && (is_escaping == false)){
     		pointer_thread_motor_pos = NULL;
     		pointer_thread_motor = NULL;
-            is_escaping = false;
             if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
             	old_move_nb = move_nb;
             }
             move_nb = choose_move(old_move_nb);
-            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
+            // chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
             move_done = false;
             move(move_nb);
     	}
@@ -202,25 +197,32 @@ static THD_FUNCTION(ThdDance, arg) {
 }
 
 /**
-* @brief Thread for speed controled motor actions
+* @brief Thread to escape obstacle
 **/
 static THD_FUNCTION(ThdEscape, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
-    do {
-        cancel_moves();
-        escape_obstacle();
-        while (move_done == false)
-        {
-            chThdSleepMilliseconds(10);
+    uint16_t motor_speed; // Stocker ici ?
+    while (1) {
+        if (is_obstacle() == true) {
+            is_escaping = true;
+            move_done = false;
+            cancel_moves();
+            do {
+                escape_obstacle();
+                while (move_done == false) {
+                    chThdSleepMilliseconds(10);
+                }
+                motor_speed = choose_motor_speed(); // Garder ici ?
+                move_forward(1, motor_speed); // Changer à 0.5s
+                pointer_thread_motor_pos = NULL;
+                pointer_thread_motor = NULL;
+            } while (is_obstacle() == true);
+            move_done = true;
+            is_escaping = false;
         }
-        move_forward(1, MOTOR_LOW_SPEED); // Changer à 0.5s
-        pointer_thread_motor_pos = NULL;
-    	pointer_thread_motor = NULL;
-    } while (is_obstacle() == true);
-    move_done = true;
-    is_escaping = false;
-    chThdExit(0);
+        chThdSleepMilliseconds(10);
+    }
 }
 
 /**
@@ -726,6 +728,7 @@ int choose_move(uint8_t old_move_nb){
 */
 int choreography_init(){
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
