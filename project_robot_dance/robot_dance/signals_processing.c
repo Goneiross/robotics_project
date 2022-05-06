@@ -16,6 +16,7 @@
 #define HIGH_FILTER_CORR_I 46
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
+#define ONSET_NB_SEND 5
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 
@@ -31,9 +32,6 @@ static float rms_frequencies_shift[WINDOW_SIZE];
 static float rms_frequency_old = 0;
 
 static float auto_correlation[2*WINDOW_SIZE];
-
-extern messagebus_t bus;
-static onset_msg_t onset_values;
 
 static BSEMAPHORE_DECL(onset_sem, TRUE);
 
@@ -75,13 +73,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	float abs_derivative = 0;
 	float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
-
-	messagebus_topic_t onset_topic;
-	MUTEX_DECL(onset_topic_lock);
-	CONDVAR_DECL(onset_topic_condvar);
-	messagebus_topic_init(&onset_topic, &onset_topic_lock, &onset_topic_condvar, &onset_values, sizeof(onset_values));
-	messagebus_advertise_topic(&bus, &onset_topic, "/onset");
-	//chprintf((BaseSequentialStream *)&SD3, "bus depuis signal processing: %d \n ", bus);
 
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
 		if(input_number == false){
@@ -131,14 +122,12 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			}
 			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
 		}
-		onset_values.onset = false;
 		if(mean_rms_derivative_fft <= abs_derivative){
 			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
-			for(uint8_t i=0; i<4; i++){
+			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 				chBSemSignal(&onset_sem);
 			}
 		}
-		//chprintf((BaseSequentialStream *)&SD3, "onset_values: %d \n ", onset_values.onset);
 
 		if(wait10 == time_to_wait){
 			wait10 = 0;
@@ -224,6 +213,6 @@ uint16_t get_music_pitch(void){
 }
 
 uint16_t get_music_amplitude(void){
-	//uint16_t amplitude = mic_output[get_music_pitch()];
-	return 100;
+	uint16_t amplitude = (uint16_t)rms_frequency_old;
+	return amplitude;
 }
