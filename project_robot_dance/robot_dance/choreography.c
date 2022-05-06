@@ -171,6 +171,9 @@ static bool is_escaping = false;
 
 static bool force_move_forward = 0;
 
+/**
+* @brief Main thread for the choreography: chooses move, execute the move and check if obstacle
+**/
 static THD_FUNCTION(ThdDance, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -196,7 +199,7 @@ static THD_FUNCTION(ThdDance, arg) {
                 move_nb = choose_move(old_move_nb);
                 chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
                 move_done = false;
-                move(move_nb);// pas random pour l'instant
+                move(move_nb);
             }
     	}
 
@@ -205,7 +208,9 @@ static THD_FUNCTION(ThdDance, arg) {
     }
 }
 
-// What to do if new thread started ????? TO DO
+/**
+* @brief Thread for speed controled motor actions
+**/
 static THD_FUNCTION(ThdMotor, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -217,7 +222,7 @@ static THD_FUNCTION(ThdMotor, arg) {
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
-			chThdSleepMilliseconds((motor_info->time_s) * 10);
+			chThdSleepMilliseconds((motor_info->time_s) * 10); // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
     	}
 		i++;
     }
@@ -227,7 +232,9 @@ static THD_FUNCTION(ThdMotor, arg) {
     chThdExit(0);
 }
 
-
+/**
+* @brief Thread for position controled motor actions
+**/
 static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -258,14 +265,16 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chThdExit(0);
 }
 
-// SI fonctionne pas cf https://www.chibios.org/dokuwiki/doku.php?id=chibios:documentation:books:rt:kernel_threading TO DO
+/**
+* @brief Thread to control a normal LED
+**/
 static THD_FUNCTION(ThdLed, arg) {
 	chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
     int led = led_info->led;
-    uint16_t delay_off = led_info->delay_off;
+    uint16_t delay_off = led_info->delay_off; // RAPPORT : On stocke les variables ici par contre
     uint16_t delay_on = led_info->delay_on;
     int iterations = led_info->iterations;
     if (led == GPIOB_LED_BODY){
@@ -275,9 +284,8 @@ static THD_FUNCTION(ThdLed, arg) {
     }
     while(1){
     	wait_onset();
-
-		palWritePad(gpio, led, 1); // First set on of the LED, should it be first off ? TO DO
-		for (int i = 0; i < iterations; i ++){ // int i or static int i ?? TO DO
+		palWritePad(gpio, led, 1); 
+		for (int i = 0; i < iterations; i ++){
 			//palTogglePad(gpio, led);
 			chThdSleepMilliseconds(delay_off);
 			palWritePad(gpio, led, 0);
@@ -288,20 +296,25 @@ static THD_FUNCTION(ThdLed, arg) {
     chThdExit(0);
 }
 
+/**
+* @brief Thread to control a RGB LED
+**/
 static THD_FUNCTION(ThdRGBLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_rgb_led_args *led_info = arg;
+    uint16_t delay_off = led_info->delay_off; // RAPPORT : On stocke les variables ici par contre
+    uint16_t delay_on = led_info->delay_on;
+    rgb_led_name_t led = led_info->led;
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led_info->led, 0, 0 , 0);
         chprintf((BaseSequentialStream *)&SD3, " follow pitch mode \n");
         while (1) {
-        	chprintf((BaseSequentialStream *)&SD3, " delayoff: %d \n", &led_info->delay_off);
-            update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
-            chThdSleepMilliseconds(led_info->delay_off);
-            choose_and_set_RGB(led_info->led);
-            chThdSleepMilliseconds(led_info->delay_on);
-            set_rgb_led(led_info->led, 0, 0 , 0);
+            update_RGB_delay(&delay_on, &delay_off);
+            chThdSleepMilliseconds(delay_off);
+            choose_and_set_RGB(led);
+            chThdSleepMilliseconds(delay_on);
+            set_rgb_led(led, 0, 0 , 0);
         }
     } else {
         // TO DO 
@@ -571,8 +584,7 @@ int choose_move(uint8_t old_move_nb){
     } else {
         uint8_t tempo = get_music_tempo();
         uint8_t move = 0;
-    	//uint8_t random = 1 + rand() % (MOVE_NB - 1);
-        uint8_t random = 1 + rand() % 99; // Get a random number between 1 and 100
+        uint8_t random = 1 + rand() % 99;
         if (tempo < TEMPO_0) {
             if (random < 70) {
                 move = FULL_ROTATION;
