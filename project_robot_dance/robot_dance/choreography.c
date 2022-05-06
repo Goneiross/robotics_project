@@ -298,7 +298,6 @@ static THD_FUNCTION(ThdRGBLed, arg) {
         chprintf((BaseSequentialStream *)&SD3, " follow pitch mode \n");
         while (1) {
             update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
-            chprintf((BaseSequentialStream *)&SD3, " led nb: %d\n", led_info->led);
             //chprintf((BaseSequentialStream *)&SD3, " delayoff: %d ms: %d\n", led_info->delay_off, get_music_interval());
             chThdSleepMilliseconds(led_info->delay_off);
             choose_and_set_RGB(&led_info->led);

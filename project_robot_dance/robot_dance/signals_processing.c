@@ -16,9 +16,10 @@
 #define HIGH_FILTER_CORR_I 46
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
-#define ONSET_NB_SEND 5
+#define ONSET_NB_SEND 4
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
+bool chBSemGetState(binary_semaphore_t *bsp);
 
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
@@ -34,20 +35,7 @@ static float rms_frequency_old = 0;
 static float auto_correlation[2*WINDOW_SIZE];
 
 static BSEMAPHORE_DECL(onset_sem, TRUE);
-
-static THD_WORKING_AREA(waThdSignalsProcessing, 128);
-static THD_FUNCTION(ThdSignalsProcessing, arg) {
-
-    chRegSetThreadName(__FUNCTION__);
-    (void)arg;
-
-    systime_t time;
-
-    while(1){
-        time = chVTGetSystemTime();
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
-    }
-}
+static BSEMAPHORE_DECL(tempo_update_sem, FALSE);
 
 void signals_processing_init(void){
 	mic_start(&processAudioData);
@@ -121,17 +109,23 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
 			}
 			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
+			chBSemReset(&tempo_update_sem,true);
 		}
 		if(mean_rms_derivative_fft <= abs_derivative){
 			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
 			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 				chBSemSignal(&onset_sem);
 			}
+			chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
+			if(chBSemGetState(&tempo_update_sem)){
+				for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+					chBSemSignal(&tempo_update_sem);
+				}
+			}
 		}
 
 		if(wait10 == time_to_wait){
 			wait10 = 0;
-			//chBSemSignal(&sendToComputer_sem);
 		} else {
 			wait10 ++;
 		}
@@ -155,6 +149,27 @@ float* get_auto_correlation(void){
 void wait_onset(void){
 	chBSemWait(&onset_sem);
 }
+
+void wait_tempo_update(void){
+	chBSemWait(&tempo_update_sem);
+}
+
+bool state_tempo_update(void){
+	return chBSemGetStateI(&tempo_update_sem);
+}
+
+void reset_tempo_update(void){
+	chBSemReset(&tempo_update_sem, FALSE);
+}
+
+bool chBSemGetState(binary_semaphore_t *bsp){
+	bool state = 0;
+	chSysLock();
+	state = chBSemGetStateI(bsp);
+	chSysUnlock();
+	return state;
+}
+
 
 /**
 * @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max
