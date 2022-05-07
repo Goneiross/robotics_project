@@ -20,6 +20,7 @@
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 bool chBSemGetState(binary_semaphore_t *bsp);
+bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number);
 
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
@@ -54,19 +55,21 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static int wait10 = 0;
 	int time_to_wait = 5;
-	static uint16_t mic_input_i = 0;
-	static bool input_number = false;
-	static bool buffer_full = false;
+	//static uint16_t mic_input_i = 0;
+	static bool input_number = 0;
+	//static bool buffer_full = false;
 	static uint8_t rms_frequencies_i = 0;
 	float abs_derivative = 0;
 	float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
 
-	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		if(input_number == false){
+	bool buffer_full = false;
+
+	/*for(uint16_t i = 0 ; i < num_samples ; i+=4){
+		if(input_number == 0){
 			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
 		}
-		if(input_number == true){
+		if(input_number == 1){
 			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
 		}
 		mic_input_i++;
@@ -76,12 +79,11 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			mic_input_i = 0;
 			buffer_full = true;
 		}
-	}
+	}*/
+	buffer_full = fill_mic_input(data, num_samples, &input_number);
 
 	if(buffer_full){
-		buffer_full = false;
-		//arm_cmplx_mag_f32(mic_cmplx_output, mic_amplitude, CHUNK_SIZE);
-		if(input_number == true){
+		if(input_number == 1){
 			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_output,0);
 		} else {
 			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_output,0);
@@ -168,6 +170,28 @@ bool chBSemGetState(binary_semaphore_t *bsp){
 	state = chBSemGetStateI(bsp);
 	chSysUnlock();
 	return state;
+}
+
+bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number){
+	static uint16_t mic_input_i = 0;
+	//static bool input_number = 0;
+	bool buffer_full = false;
+	for(uint16_t i = 0 ; i < num_samples ; i+=4){
+		if(*input_number == 0){
+			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		if(*input_number == 1){
+			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		mic_input_i++;
+
+		if(mic_input_i >= (CHUNK_SIZE)){
+			*input_number = !(*input_number);
+			mic_input_i = 0;
+			buffer_full = true;
+		}
+	}
+	return buffer_full;
 }
 
 
