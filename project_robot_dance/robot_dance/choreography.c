@@ -23,8 +23,8 @@
 #define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 10
 #define DEFAULT_ROTATION_ITERATION 1
-#define DEFAULT_MOVE_TIME_S 3
-#define DEFAULT_MOVE_TIME_MS 3000
+#define DEFAULT_MOVE_ESCAPE_TIME_MS 500
+#define DEFAULT_MOVE_TIME_MS 1000
 #define MOTOR_MAX_SPEED 2200
 #define MOTOR_HIGH_SPEED 1800
 #define MOTOR_MEDIUM_SPEED 1100
@@ -163,7 +163,7 @@ void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
 
 static THD_WORKING_AREA(waThdDance, 1024);
-static THD_WORKING_AREA(waThdEscape, 1024);
+static THD_WORKING_AREA(waThdEscape, 2048);
 static THD_WORKING_AREA(waThdMotor, 1024);
 static THD_WORKING_AREA(waThdMotorPos, 1024);
 static THD_WORKING_AREA(waThdLedLED1, 256);
@@ -201,7 +201,6 @@ static THD_FUNCTION(ThdDance, arg) {
     (void)arg;
     static uint8_t move_nb = 0;
     static uint8_t old_move_nb = 0;
-    systime_t time;
     while(1){
     	if((move_done == true) && (is_escaping == false)){
     		pointer_thread_motor_pos = NULL;
@@ -225,25 +224,34 @@ static THD_FUNCTION(ThdEscape, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     uint16_t motor_speed; // Stocker ici ?
+    chThdSleepMilliseconds(2000);
     while (1) {
         if (is_obstacle() == true) {
             is_escaping = true;
             move_done = false;
             cancel_moves();
+            chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
             do {
+            	chprintf((BaseSequentialStream *)&SD3, "in the do of escape\n");
                 escape_obstacle();
                 while (move_done == false) {
                     chThdSleepMilliseconds(10);
                 }
                 motor_speed = choose_motor_speed(); // Garder ici ?
-                move_forward(500, motor_speed);
+                move_done = false;
+                move_forward(DEFAULT_MOVE_ESCAPE_TIME_MS, motor_speed);
+                while (move_done == false) {
+                	chThdSleepMilliseconds(10);
+                }
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
+            chprintf((BaseSequentialStream *)&SD3, "out of the while of escape\n");
             move_done = true;
             is_escaping = false;
         }
-        chThdSleepMilliseconds(10);
+        chprintf((BaseSequentialStream *)&SD3, "going to sleep now\n");
+        chThdSleepMilliseconds(20);
     }
 }
 
@@ -256,21 +264,35 @@ static THD_FUNCTION(ThdMotor, arg) {
     thd_motor_args *motor_info = arg;
     right_motor_set_speed(motor_info->speed_right);
     left_motor_set_speed(motor_info->speed_left);
-    uint8_t i = 0;
-    while(i < 100){
-    	if(chThdShouldTerminateX()){
-    		chThdExit(0);
-    	} else {
-			chThdSleepMilliseconds((motor_info->time_ms) / 100); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifiÃ© durant l'Ã©xÃ©cution
-    	}
-		i++;
+    if (motor_info->time_ms > 1000) {
+        uint16_t sleep_time = (motor_info->time_ms) / 100;
+        uint8_t i = 0;
+        while(i < 100){
+            if(chThdShouldTerminateX()){
+                chThdExit(0);
+            } else {
+                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
+            }
+            i++;
+        }
+    } else {
+        uint16_t sleep_time = (motor_info->time_ms) / 10;
+        uint8_t i = 0;
+        while(i < 10){
+            if(chThdShouldTerminateX()){
+                chThdExit(0);
+            } else {
+                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
+            }
+            i++;
+        }
     }
+
     right_motor_set_speed(0);
     left_motor_set_speed(0);
     move_done = true;
     chThdExit(0);
 }
-
 /**
 * @brief Thread for position controled motor actions
 **/
@@ -298,7 +320,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
 				}
 			}
     	}
-        chThdSleepMilliseconds(10);
+        chThdSleepMilliseconds(50);
     }
     move_done = true;
     chThdExit(0);
@@ -347,7 +369,6 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     rgb_led_name_t led = led_info->led;
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led_info->led, 0, 0 , 0);
-        chprintf((BaseSequentialStream *)&SD3, " follow pitch mode \n");
         while (1) {
             update_RGB_delay(&delay_on, &delay_off);
             chThdSleepMilliseconds(delay_off);
@@ -634,9 +655,6 @@ uint16_t choose_motor_speed(){
 * @return the value of the move
 */
 int choose_move(uint8_t old_move_nb){
-	if (is_obstacle() == true){
-        return ESCAPE_OBSTACLE;
-    } else {
         uint8_t tempo = get_music_tempo();
         uint8_t move = 0;
         uint8_t random = 1 + rand() % 99;
@@ -740,7 +758,6 @@ int choose_move(uint8_t old_move_nb){
             }
         }
         return (move);
-    }
 }
 
 /**
@@ -960,7 +977,6 @@ void turn_around(){
 * @param delay_ff Delay, for the LED to be off, to update
 */
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
-	chprintf((BaseSequentialStream *)&SD3, " amplitude:%d, interval: %d \n", get_music_amplitude(), get_music_interval());
     uint16_t delay = get_music_interval();
     *delay_on = delay;
     *delay_off = delay;

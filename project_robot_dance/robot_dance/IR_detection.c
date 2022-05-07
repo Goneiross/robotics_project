@@ -36,8 +36,6 @@ static THD_FUNCTION(ThdDetection, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
 
-    systime_t time;
-
     calibrate_ir();
 
     while(1){
@@ -46,8 +44,7 @@ static THD_FUNCTION(ThdDetection, arg) {
         }
         compute_distance();
         debug_detection(DEBUG_LEVEL);
-        time = chVTGetSystemTime();
-        chThdSleepUntilWindowed(time, time + MS2ST(100));
+        chThdSleepMilliseconds(20);
     }
 }
 
