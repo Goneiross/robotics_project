@@ -27,6 +27,7 @@ static uint16_t obstacle_dist[8] = {0};
 
 void compute_distance(void);
 void debug_detection(int level);
+uint8_t find_min_obstacle_distance_index(void);
 
 static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
