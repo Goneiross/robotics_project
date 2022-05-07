@@ -61,7 +61,7 @@
 #define POSITION_NOT_REACHED	0
 #define POSITION_REACHED       	1
 
-#define COLOR_HZ_RANGE 2000
+#define COLOR_HZ_RANGE 1000
 
 /**
 * @brief Structure définissant les différents move
@@ -229,7 +229,6 @@ static THD_FUNCTION(ThdEscape, arg) {
             chThdSleepMilliseconds(50);
             chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
             do {
-            	chprintf((BaseSequentialStream *)&SD3, "in the do of escape\n");
                 escape_obstacle();
                 while (move_done == false) {
                     chThdSleepMilliseconds(10);
@@ -243,11 +242,9 @@ static THD_FUNCTION(ThdEscape, arg) {
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
-            chprintf((BaseSequentialStream *)&SD3, "out of the while of escape\n");
             move_done = true;
             is_escaping = false;
         }
-        chprintf((BaseSequentialStream *)&SD3, "going to sleep now\n");
         chThdSleepMilliseconds(20);
     }
 }
@@ -367,7 +364,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led, 0, 0 , 0);
         while (1) {
-        	if(state_tempo_update){
+        	if(state_tempo_update()){
         		wait_tempo_update();
 				reset_tempo_update();
         	}
@@ -594,17 +591,16 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 		uint8_t r = 255;
 		uint8_t g = 255;
 		uint8_t b = 255;
-		/*if(pitch < COLOR_HZ_RANGE/6){
-			g =0;
-			b = (pitch * 6 * 255) / COLOR_HZ_RANGE;
+		if(pitch < COLOR_HZ_RANGE/6){
+			b =0;
+			g = (pitch * 6 * 255) / COLOR_HZ_RANGE;
 		} else if(pitch < 2*COLOR_HZ_RANGE/6){
-			r=0;
-			g=0;
+			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE+2*255;
 			b=0;
 
 		} else if(pitch< 3*COLOR_HZ_RANGE/6){
 			r = 0;
-			g = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
+			b = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
 		} else if(pitch < 4*COLOR_HZ_RANGE/6){
 			r=0;
 			g=0;
@@ -620,8 +616,8 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 			g=0;
 			b=0;
 		}
-		set_rgb_led(led_number, r, g , b);*/
-		if (pitch < PITCH_0 ) {
+		set_rgb_led(*led_number, r, g , b);
+		/*if (pitch < PITCH_0 ) {
 			set_rgb_led(*led_number, 255, 0 , 0);
 		} else if (pitch < PITCH_1) {
 			set_rgb_led(*led_number, 255, 127, 0);
@@ -635,7 +631,7 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 			set_rgb_led(*led_number, 75, 0, 130);
 		} else {
 			set_rgb_led(*led_number, 148, 0, 211);
-		}
+		}*/
 	}
 }
 
@@ -774,8 +770,8 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
+    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -978,5 +974,5 @@ void turn_around(){
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
     *delay_on = delay/2;
-    *delay_off = delay/2;
+    //*delay_off = delay/2;
 }
