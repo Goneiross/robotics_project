@@ -16,8 +16,11 @@
 #define HIGH_FILTER_CORR_I 46
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
+#define ONSET_NB_SEND 4
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
+bool chBSemGetState(binary_semaphore_t *bsp);
+bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number);
 
 static float mic_output[CHUNK_SIZE/2];
 static float mic_cmplx_output[CHUNK_SIZE];
@@ -32,24 +35,8 @@ static float rms_frequency_old = 0;
 
 static float auto_correlation[2*WINDOW_SIZE];
 
-extern messagebus_t bus;
-static onset_msg_t onset_values;
-
 static BSEMAPHORE_DECL(onset_sem, TRUE);
-
-static THD_WORKING_AREA(waThdSignalsProcessing, 128);
-static THD_FUNCTION(ThdSignalsProcessing, arg) {
-
-    chRegSetThreadName(__FUNCTION__);
-    (void)arg;
-
-    systime_t time;
-
-    while(1){
-        time = chVTGetSystemTime();
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
-    }
-}
+static BSEMAPHORE_DECL(tempo_update_sem, FALSE);
 
 void signals_processing_init(void){
 	mic_start(&processAudioData);
@@ -68,26 +55,21 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static int wait10 = 0;
 	int time_to_wait = 5;
-	static uint16_t mic_input_i = 0;
-	static bool input_number = false;
-	static bool buffer_full = false;
+	//static uint16_t mic_input_i = 0;
+	static bool input_number = 0;
+	//static bool buffer_full = false;
 	static uint8_t rms_frequencies_i = 0;
 	float abs_derivative = 0;
 	float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
 
-	messagebus_topic_t onset_topic;
-	MUTEX_DECL(onset_topic_lock);
-	CONDVAR_DECL(onset_topic_condvar);
-	messagebus_topic_init(&onset_topic, &onset_topic_lock, &onset_topic_condvar, &onset_values, sizeof(onset_values));
-	messagebus_advertise_topic(&bus, &onset_topic, "/onset");
-	//chprintf((BaseSequentialStream *)&SD3, "bus depuis signal processing: %d \n ", bus);
+	bool buffer_full = false;
 
-	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		if(input_number == false){
+	/*for(uint16_t i = 0 ; i < num_samples ; i+=4){
+		if(input_number == 0){
 			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
 		}
-		if(input_number == true){
+		if(input_number == 1){
 			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
 		}
 		mic_input_i++;
@@ -97,12 +79,11 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			mic_input_i = 0;
 			buffer_full = true;
 		}
-	}
+	}*/
+	buffer_full = fill_mic_input(data, num_samples, &input_number);
 
 	if(buffer_full){
-		buffer_full = false;
-		//arm_cmplx_mag_f32(mic_cmplx_output, mic_amplitude, CHUNK_SIZE);
-		if(input_number == true){
+		if(input_number == 1){
 			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_output,0);
 		} else {
 			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_output,0);
@@ -130,19 +111,23 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
 			}
 			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
+			chBSemReset(&tempo_update_sem,true);
 		}
-		onset_values.onset = false;
 		if(mean_rms_derivative_fft <= abs_derivative){
 			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
-			for(uint8_t i=0; i<4; i++){
+			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 				chBSemSignal(&onset_sem);
 			}
+			chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
+			if(chBSemGetState(&tempo_update_sem)){
+				for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+					chBSemSignal(&tempo_update_sem);
+				}
+			}
 		}
-		//chprintf((BaseSequentialStream *)&SD3, "onset_values: %d \n ", onset_values.onset);
 
 		if(wait10 == time_to_wait){
 			wait10 = 0;
-			//chBSemSignal(&sendToComputer_sem);
 		} else {
 			wait10 ++;
 		}
@@ -166,6 +151,49 @@ float* get_auto_correlation(void){
 void wait_onset(void){
 	chBSemWait(&onset_sem);
 }
+
+void wait_tempo_update(void){
+	chBSemWait(&tempo_update_sem);
+}
+
+bool state_tempo_update(void){
+	return chBSemGetStateI(&tempo_update_sem);
+}
+
+void reset_tempo_update(void){
+	chBSemReset(&tempo_update_sem, FALSE);
+}
+
+bool chBSemGetState(binary_semaphore_t *bsp){
+	bool state = 0;
+	chSysLock();
+	state = chBSemGetStateI(bsp);
+	chSysUnlock();
+	return state;
+}
+
+bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number){
+	static uint16_t mic_input_i = 0;
+	//static bool input_number = 0;
+	bool buffer_full = false;
+	for(uint16_t i = 0 ; i < num_samples ; i+=4){
+		if(*input_number == 0){
+			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		if(*input_number == 1){
+			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		mic_input_i++;
+
+		if(mic_input_i >= (CHUNK_SIZE)){
+			*input_number = !(*input_number);
+			mic_input_i = 0;
+			buffer_full = true;
+		}
+	}
+	return buffer_full;
+}
+
 
 /**
 * @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max
@@ -224,6 +252,6 @@ uint16_t get_music_pitch(void){
 }
 
 uint16_t get_music_amplitude(void){
-	//uint16_t amplitude = mic_output[get_music_pitch()];
-	return 100;
+	uint16_t amplitude = (uint16_t)rms_frequency_old;
+	return amplitude;
 }
