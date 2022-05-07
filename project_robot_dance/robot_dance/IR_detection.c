@@ -19,6 +19,7 @@
 #define THRESHOLD_DIST 40
 
 #define P1 0.00017303
+#define P1_INV 5779
 #define P2 0.00054629
 
 static int16_t prox[8] = {0};
@@ -26,18 +27,12 @@ static int16_t obstacle_dist[8] = {0};
 
 void compute_distance(void);
 void debug_detection(int level);
-//int detection_init(void);
-//bool is_obstacle(void);
-//void update_obstacle_array(bool *obstacle);
 
 static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
-
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
-
     calibrate_ir();
-
     while(1){
         for (int i = 0; i < LED_IR_nb; i++){
           prox[i] = get_prox(i);
@@ -49,17 +44,14 @@ static THD_FUNCTION(ThdDetection, arg) {
 }
 
 /**
-* @brief Compute distance in mm from the obstacle if between threshlod. The threshold is used to remove unwanted data / noise
+* @brief Compute distance in mm from the obstacle if between threshlod. The threshold is used to remove unwanted data. Formula is given here : 
+*        1/prox = p1*distance - p2; distance = (1/prox+p2)/p1; p1 = 0.00017303; p2 = 0.00054629;
 */
 void compute_distance(){
     for (int i = 0; i < LED_IR_nb; i++){
         obstacle_dist[i] = 255;
         if ((prox[i] > THRESHOLD_PROX_MIN) && (prox[i] < THRESHOLD_PROX_MAX)) {
-            obstacle_dist[i] = (1/(float)prox[i] + P2)/P1;
-            // 1/prox = p1*distance - p2
-            //distance = (1/prox+p2)/p1
-            // p1 = 0.00017303
-            //p2 = 0.00054629
+            obstacle_dist[i] = (1/(float)prox[i] + P2)*P1_INV;
         }
     }
 }
@@ -126,21 +118,3 @@ void update_obstacle_array(bool *obstacle){
         }
     }
 }
-
-// /**
-// * @brief Returns the distance to the objetct
-// *
-// * @return Distance to the object
-// */
-// float get_obstacle_angle(){
-//     return ;
-// }
-
-// /**
-// * @brief Returns the distance to the obstacle
-// *
-// * @return Distance to the object
-// */
-// float get_obstacle_distance(){
-//     return ;
-// }
