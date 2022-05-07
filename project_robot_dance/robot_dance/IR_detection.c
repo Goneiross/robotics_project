@@ -23,7 +23,7 @@
 #define P2 0.00054629
 
 static int16_t prox[8] = {0};
-static int16_t obstacle_dist[8] = {0};
+static uint16_t obstacle_dist[8] = {0};
 
 void compute_distance(void);
 void debug_detection(int level);
@@ -111,10 +111,28 @@ bool is_obstacle(){
 * @return Array of obstacle detection
 */
 void update_obstacle_array(bool *obstacle){
+    uint8_t min_index = find_min_obstacle_distance_index();
     for (int i = 0; i < LED_IR_nb; i++){
         obstacle[i] = false;
-        if (obstacle_dist[i] < THRESHOLD_DIST) {
-            obstacle[i] = true;
+    }
+    if (obstacle_dist[min_index] < THRESHOLD_DIST) {
+            obstacle[min_index] = true;
+    }
+}
+
+/**
+* @brief Find the nearest obstacle index
+*
+* @return The index of the nearest obstacle
+*/
+uint8_t find_min_obstacle_distance_index(){
+    uint8_t min_index = 0;
+    uint16_t min = obstacle_dist[0];
+    for (uint8_t i = 1; i < LED_IR_nb; i++){
+        if (obstacle_dist[i] < min){
+            min_index = i;
+            min = obstacle_dist[i];
         }
     }
+    return min_index;
 }
