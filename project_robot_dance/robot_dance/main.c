@@ -56,8 +56,8 @@ int main(void)
 
 
 	while(1){
-		uint16_t interval = get_music_interval();
-		uint16_t tempo = get_music_tempo();
+		// uint16_t interval = get_music_interval();
+		// uint16_t tempo = get_music_tempo();
 		//chprintf((BaseSequentialStream *)&SD3, " interval:%d, tempo: %d \n", interval, tempo);
 
 		//arm_copy_f32(get_audio_buffer_ptr(), send_tab, CHUNK_SIZE/2);

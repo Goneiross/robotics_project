@@ -86,8 +86,7 @@ typedef enum {
 /**
 * @brief Structure définissant une couleur en RGB
 */
-typedef struct rgb
-{
+typedef struct rgb {
     uint8_t r;
     uint8_t g;
     uint8_t b;
@@ -96,8 +95,7 @@ typedef struct rgb
 /**
 * @brief Structure pour passer en arguments au ThdLed
 */
-typedef struct thd_led_args
-{
+typedef struct thd_led_args {
     uint8_t led;
     uint8_t iterations;
     uint16_t delay_on;
@@ -107,8 +105,7 @@ typedef struct thd_led_args
 /**
 * @brief Structure pour passer en arguments au ThdRGBLed
 */
-typedef struct thd_rgb_led_args
-{
+typedef struct thd_rgb_led_args {
     rgb_led_name_t led;
     uint8_t iterations;
     uint16_t delay_on;
@@ -120,8 +117,7 @@ typedef struct thd_rgb_led_args
 /**
 * @brief Structure pour passer en arguments au ThdMotor
 */
-typedef struct thd_motor_args
-{
+typedef struct thd_motor_args {
     uint16_t time_ms;
     int16_t speed_left;
     int16_t speed_right;
@@ -130,8 +126,7 @@ typedef struct thd_motor_args
 /**
 * @brief Structure pour passer en arguments au ThdMotorPos
 */
-typedef struct thd_motor_pos_args
-{
+typedef struct thd_motor_pos_args {
     float position_r;
     float position_l;
     int16_t speed_right;
@@ -150,7 +145,7 @@ void blink_LED_BODY(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED_FRONT(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void cancel_moves(void);
 void choose_and_set_RGB(rgb_led_name_t *led_number);
-uint16_t choose_motor_speed();
+uint16_t choose_motor_speed(void);
 int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
@@ -369,18 +364,18 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     uint16_t delay_on = led_info->delay_on;
     rgb_led_name_t led = led_info->led;
     if (led_info->led_play_type == FOLLOW_PITCH){
-        set_rgb_led(led_info->led, 0, 0 , 0);
+        set_rgb_led(led, 0, 0 , 0);
         while (1) {
         	if(state_tempo_update){
         		wait_tempo_update();
 				reset_tempo_update();
         	}
-            update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
-            //chprintf((BaseSequentialStream *)&SD3, " delayoff: %d ms: %d\n", led_info->delay_off, get_music_interval());
-            chThdSleepMilliseconds(led_info->delay_off);
-            choose_and_set_RGB(&led_info->led);
-            chThdSleepMilliseconds(led_info->delay_on);
-            set_rgb_led(led_info->led, 0, 0 , 0);
+            update_RGB_delay(&delay_on, &delay_off);
+            //chprintf((BaseSequentialStream *)&SD3, " delayoff: %d ms: %d\n", delay_off, get_music_interval());
+            chThdSleepMilliseconds(delay_off);
+            choose_and_set_RGB(&led);
+            chThdSleepMilliseconds(delay_on);
+            set_rgb_led(led, 0, 0 , 0);
         }
     } else {
         // TO DO 
