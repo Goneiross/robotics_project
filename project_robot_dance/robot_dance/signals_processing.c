@@ -118,7 +118,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 				chBSemSignal(&onset_sem);
 			}
-			chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
+			//chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
 			if(chBSemGetState(&tempo_update_sem)){
 				for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 					chBSemSignal(&tempo_update_sem);
@@ -157,7 +157,7 @@ void wait_tempo_update(void){
 }
 
 bool state_tempo_update(void){
-	return chBSemGetStateI(&tempo_update_sem);
+	return chBSemGetState(&tempo_update_sem);
 }
 
 void reset_tempo_update(void){
