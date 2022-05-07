@@ -32,7 +32,7 @@
 #define MOTOR_TURTLE_SPEED 100
 #define MOTOR_MIN_SPEED 100
 
-#define SOUND_AMP_MIN 60
+#define SOUND_AMP_MIN 80
 
 #define TEMPO_0 60
 #define TEMPO_1 80
@@ -145,10 +145,11 @@ void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colou
 void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
 void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED8(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
 void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off);
 void cancel_moves(void);
-void choose_and_set_RGB(rgb_led_name_t led_number);
+void choose_and_set_RGB(rgb_led_name_t *led_number);
 uint16_t choose_motor_speed();
 int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
@@ -271,7 +272,7 @@ static THD_FUNCTION(ThdMotor, arg) {
             if(chThdShouldTerminateX()){
                 chThdExit(0);
             } else {
-                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
+                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifiï¿½ durant l'ï¿½xï¿½cution
             }
             i++;
         }
@@ -282,7 +283,7 @@ static THD_FUNCTION(ThdMotor, arg) {
             if(chThdShouldTerminateX()){
                 chThdExit(0);
             } else {
-                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifié durant l'éxécution
+                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifiï¿½ durant l'ï¿½xï¿½cution
             }
             i++;
         }
@@ -370,11 +371,16 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led_info->led, 0, 0 , 0);
         while (1) {
-            update_RGB_delay(&delay_on, &delay_off);
-            chThdSleepMilliseconds(delay_off);
-            choose_and_set_RGB(led);
-            chThdSleepMilliseconds(delay_on);
-            set_rgb_led(led, 0, 0 , 0);
+        	if(state_tempo_update){
+        		wait_tempo_update();
+				reset_tempo_update();
+        	}
+            update_RGB_delay(&led_info->delay_on, &led_info->delay_off);
+            //chprintf((BaseSequentialStream *)&SD3, " delayoff: %d ms: %d\n", led_info->delay_off, get_music_interval());
+            chThdSleepMilliseconds(led_info->delay_off);
+            choose_and_set_RGB(&led_info->led);
+            chThdSleepMilliseconds(led_info->delay_on);
+            set_rgb_led(led_info->led, 0, 0 , 0);
         }
     } else {
         // TO DO 
@@ -580,7 +586,7 @@ void cancel_moves(){
 *
 * @param led_number The rgb_led_name_t of the led to use
 */
-void choose_and_set_RGB(rgb_led_name_t led_number){
+void choose_and_set_RGB(rgb_led_name_t *led_number){
 	if(get_music_amplitude()>SOUND_AMP_MIN){
 		uint16_t pitch = get_music_pitch();
 		uint8_t r = 255;
@@ -614,19 +620,19 @@ void choose_and_set_RGB(rgb_led_name_t led_number){
 		}
 		set_rgb_led(led_number, r, g , b);*/
 		if (pitch < PITCH_0 ) {
-			set_rgb_led(led_number, 255, 0 , 0);
+			set_rgb_led(*led_number, 255, 0 , 0);
 		} else if (pitch < PITCH_1) {
-			set_rgb_led(led_number, 255, 127, 0);
+			set_rgb_led(*led_number, 255, 127, 0);
 		} else if (pitch < PITCH_2) {
-			set_rgb_led(led_number, 255, 255, 0);
+			set_rgb_led(*led_number, 255, 255, 0);
 		} else if (pitch < PITCH_3) {
-			set_rgb_led(led_number, 0, 255, 0);
+			set_rgb_led(*led_number, 0, 255, 0);
 		} else if (pitch < PITCH_4) {
-			set_rgb_led(led_number, 0, 0, 255);
+			set_rgb_led(*led_number, 0, 0, 255);
 		} else if (pitch < PITCH_5) {
-			set_rgb_led(led_number, 75, 0, 130);
+			set_rgb_led(*led_number, 75, 0, 130);
 		} else {
-			set_rgb_led(led_number, 148, 0, 211);
+			set_rgb_led(*led_number, 148, 0, 211);
 		}
 	}
 }
@@ -978,6 +984,6 @@ void turn_around(){
 */
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
-    *delay_on = delay;
+    //*delay_on = delay;
     *delay_off = delay;
 }

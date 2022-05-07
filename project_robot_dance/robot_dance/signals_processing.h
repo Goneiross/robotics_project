@@ -20,5 +20,8 @@ uint8_t get_music_tempo(void);
 uint16_t get_music_pitch(void);
 uint16_t get_music_interval(void);
 uint16_t get_music_amplitude(void);
+void wait_tempo_update(void);
+bool state_tempo_update(void);
+void reset_tempo_update(void);
 
 #endif
