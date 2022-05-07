@@ -98,8 +98,8 @@ typedef struct rgb
 */
 typedef struct thd_led_args
 {
-    int led;
-    int iterations;
+    uint8_t led;
+    uint8_t iterations;
     uint16_t delay_on;
     uint16_t delay_off;
 } thd_led_args;
@@ -110,7 +110,7 @@ typedef struct thd_led_args
 typedef struct thd_rgb_led_args
 {
     rgb_led_name_t led;
-    int iterations;
+    uint8_t iterations;
     uint16_t delay_on;
     uint16_t delay_off;
     rgb colour;
@@ -134,20 +134,20 @@ typedef struct thd_motor_pos_args
 {
     float position_r;
     float position_l;
-    float speed_r;
-    float speed_l;
+    int16_t speed_right;
+    int16_t speed_left;
 } thd_motor_pos_args;
 
-void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED2(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
-void blink_LED3(int iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
-void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
-void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED8(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
-void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED5(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED7(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED_BODY(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
+void blink_LED_FRONT(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void cancel_moves(void);
 void choose_and_set_RGB(rgb_led_name_t *led_number);
 uint16_t choose_motor_speed();
@@ -155,7 +155,7 @@ int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
-void motor_set_position(float position_r, float position_l, float speed_r, float speed_l);
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left);
 void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
@@ -301,7 +301,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
-    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_r, motor_pos_info->speed_l);
+    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left);
     while ((position_right_reached == false) || (position_left_reached == false)){
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
@@ -335,10 +335,10 @@ static THD_FUNCTION(ThdLed, arg) {
     (void)arg;
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
-    int led = led_info->led;
+    uint8_t led = led_info->led;
     uint16_t delay_off = led_info->delay_off; // RAPPORT : On stocke les variables ici par contre
     uint16_t delay_on = led_info->delay_on;
-    int iterations = led_info->iterations;
+    uint8_t iterations = led_info->iterations;
     if (led == GPIOB_LED_BODY){
     	gpio = GPIOB;
     } else {
@@ -396,7 +396,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED1;
     led_args.iterations = iterations;
@@ -414,7 +414,7 @@ void blink_LED1(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED2(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED2;
     rgb_led_args.iterations = iterations;
@@ -432,7 +432,7 @@ void blink_LED2(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colou
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED3(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED3;
     led_args.iterations = iterations;
@@ -450,7 +450,7 @@ void blink_LED3(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED4;
     rgb_led_args.iterations = iterations;
@@ -468,7 +468,7 @@ void blink_LED4(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colou
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED5(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED5;
     led_args.iterations = iterations;
@@ -486,7 +486,7 @@ void blink_LED5(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED6;
     rgb_led_args.iterations = iterations;
@@ -504,7 +504,7 @@ void blink_LED6(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colou
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED7(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED7;
     led_args.iterations = iterations;
@@ -522,7 +522,7 @@ void blink_LED7(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED8(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED8;
     rgb_led_args.iterations = iterations;
@@ -540,7 +540,7 @@ void blink_LED8(int iterations, uint16_t delay_on, uint16_t delay_off, rgb colou
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED_BODY(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOB_LED_BODY;
     led_args.iterations = iterations;
@@ -556,7 +556,7 @@ void blink_LED_BODY(int iterations, uint16_t delay_on, uint16_t delay_off){
 * @param delay_on Number of ms to set the LED on
 * @param delay_off Number of ms to set the LED off
 */
-void blink_LED_FRONT(int iterations, uint16_t delay_on, uint16_t delay_off){
+void blink_LED_FRONT(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
     static thd_led_args led_args;
     led_args.led = GPIOD_LED_FRONT;
     led_args.iterations = iterations;
@@ -801,50 +801,50 @@ void escape_obstacle(){
     if (obstacle[0] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
-        motor_pos_args.speed_r = motor_speed;
-        motor_pos_args.speed_l = -motor_speed;
+        motor_pos_args.speed_right = motor_speed;
+        motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[1] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
-        motor_pos_args.speed_r = motor_speed;
-        motor_pos_args.speed_l = -motor_speed;
+        motor_pos_args.speed_right = motor_speed;
+        motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[2] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
-        motor_pos_args.speed_r = motor_speed;
-        motor_pos_args.speed_l = -motor_speed;
+        motor_pos_args.speed_right = motor_speed;
+        motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[3] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
-        motor_pos_args.speed_r = motor_speed;
-        motor_pos_args.speed_l = -motor_speed;
+        motor_pos_args.speed_right = motor_speed;
+        motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[4] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
-        motor_pos_args.speed_r = -motor_speed;
-        motor_pos_args.speed_l = motor_speed;
+        motor_pos_args.speed_right = -motor_speed;
+        motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[5] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
-        motor_pos_args.speed_r = -motor_speed;
-        motor_pos_args.speed_l = motor_speed;
+        motor_pos_args.speed_right = -motor_speed;
+        motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[6] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
-        motor_pos_args.speed_r = -motor_speed;
-        motor_pos_args.speed_l = motor_speed;
+        motor_pos_args.speed_right = -motor_speed;
+        motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else if (obstacle[7] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
-        motor_pos_args.speed_r = -motor_speed;
-        motor_pos_args.speed_l = motor_speed;
+        motor_pos_args.speed_right = -motor_speed;
+        motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else {
     	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
@@ -869,10 +869,10 @@ void full_rotation(){
 *
 * @param position_r Position to go to for the right motor
 * @param position_l Position to go to for the left motor
-* @param speed_r Speed of the right motor
-* @param speed_l Speed of the left motor
+* @param speed_right Speed of the right motor
+* @param speed_left Speed of the left motor
 */
-void motor_set_position(float position_r, float position_l, float speed_r, float speed_l){
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left){
 	//reinit global variable
 	right_motor_set_pos(0);
 	left_motor_set_pos(0);
@@ -886,8 +886,8 @@ void motor_set_position(float position_r, float position_l, float speed_r, float
 	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
 	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
 
-    right_motor_set_speed(speed_r);
-    left_motor_set_speed(speed_l);
+    right_motor_set_speed(speed_right);
+    left_motor_set_speed(speed_left);
 }
 
 /**

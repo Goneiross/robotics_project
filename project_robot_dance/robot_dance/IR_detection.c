@@ -21,8 +21,8 @@
 #define P1 0.00017303
 #define P2 0.00054629
 
-static int prox[8] = {0};
-static int obstacle_dist[8] = {0};
+static int16_t prox[8] = {0};
+static int16_t obstacle_dist[8] = {0};
 
 void compute_distance(void);
 void debug_detection(int level);
