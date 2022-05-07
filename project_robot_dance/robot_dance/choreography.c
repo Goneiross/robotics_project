@@ -219,7 +219,7 @@ static THD_FUNCTION(ThdDance, arg) {
 static THD_FUNCTION(ThdEscape, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
-    uint16_t motor_speed; // Stocker ici ?
+    uint16_t motor_speed;
     chThdSleepMilliseconds(2000);
     while (1) {
         if (is_obstacle() == true) {
@@ -233,7 +233,7 @@ static THD_FUNCTION(ThdEscape, arg) {
                 while (move_done == false) {
                     chThdSleepMilliseconds(10);
                 }
-                motor_speed = choose_motor_speed(); // Garder ici ?
+                motor_speed = choose_motor_speed();
                 move_done = false;
                 move_forward(DEFAULT_MOVE_ESCAPE_TIME_MS, motor_speed);
                 while (move_done == false) {
@@ -267,7 +267,7 @@ static THD_FUNCTION(ThdMotor, arg) {
             if(chThdShouldTerminateX()){
                 chThdExit(0);
             } else {
-                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifi� durant l'�x�cution
+                chThdSleepMilliseconds(sleep_time);
             }
             i++;
         }
@@ -278,7 +278,7 @@ static THD_FUNCTION(ThdMotor, arg) {
             if(chThdShouldTerminateX()){
                 chThdExit(0);
             } else {
-                chThdSleepMilliseconds(sleep_time); // TO DO : Vraiment une division ?  // RAPPORT: ON GARDE motor_info-> car aucun risque que modifi� durant l'�x�cution
+                chThdSleepMilliseconds(sleep_time);
             }
             i++;
         }
@@ -331,7 +331,7 @@ static THD_FUNCTION(ThdLed, arg) {
     thd_led_args *led_info = arg;
     stm32_gpio_t* gpio;
     uint8_t led = led_info->led;
-    uint16_t delay_off = led_info->delay_off; // RAPPORT : On stocke les variables ici par contre
+    uint16_t delay_off = led_info->delay_off;
     uint16_t delay_on = led_info->delay_on;
     uint8_t iterations = led_info->iterations;
     if (led == GPIOB_LED_BODY){
@@ -343,7 +343,6 @@ static THD_FUNCTION(ThdLed, arg) {
     	wait_onset();
 		palWritePad(gpio, led, 1); 
 		for (int i = 0; i < iterations; i ++){
-			//palTogglePad(gpio, led);
 			chThdSleepMilliseconds(delay_off);
 			palWritePad(gpio, led, 0);
 			chThdSleepMilliseconds(delay_on);
@@ -360,9 +359,10 @@ static THD_FUNCTION(ThdRGBLed, arg) {
  chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_rgb_led_args *led_info = arg;
-    uint16_t delay_off = led_info->delay_off; // RAPPORT : On stocke les variables ici par contre
+    uint16_t delay_off = led_info->delay_off;
     uint16_t delay_on = led_info->delay_on;
     rgb_led_name_t led = led_info->led;
+    uint8_t iterations = led_info->iterations;
     if (led_info->led_play_type == FOLLOW_PITCH){
         set_rgb_led(led, 0, 0 , 0);
         while (1) {
@@ -378,9 +378,15 @@ static THD_FUNCTION(ThdRGBLed, arg) {
             set_rgb_led(led, 0, 0 , 0);
         }
     } else {
-        // TO DO 
+        set_rgb_led(led, 0, 0 , 0);
+        for (int i = 0; i < iterations; i++) {
+            chThdSleepMilliseconds(delay_off);
+            choose_and_set_RGB(&led);
+            chThdSleepMilliseconds(delay_on);
+            set_rgb_led(led, 0, 0 , 0);
+        }
     }
-    // move_done = true;
+    move_done = true;
     chThdExit(0);
 }
 
@@ -638,7 +644,7 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 * @return the speed chosen for the motors
 */
 uint16_t choose_motor_speed(){
-    uint8_t tempo = get_music_tempo(); // FAIRE AUTREMENT QUE PLEIN DE GET TEMPO ?
+    uint8_t tempo = get_music_tempo();
     uint16_t speed = tempo * TEMPO_SPEED_COEF;
     if (speed > MOTOR_MAX_SPEED){
         speed = MOTOR_MAX_SPEED;
@@ -855,8 +861,7 @@ void full_rotation(){
     motor_args.time_ms = DEFAULT_MOVE_TIME_MS;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
-	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
-	//c-est faux ce doit =ertre un motorpos
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_args);
 }
 
 /**
@@ -868,19 +873,14 @@ void full_rotation(){
 * @param speed_left Speed of the left motor
 */
 void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left){
-	//reinit global variable
 	right_motor_set_pos(0);
 	left_motor_set_pos(0);
 	counter_step_left = 0;
 	counter_step_right = 0;
-
     position_right_reached = 0;
     position_left_reached = 0;
-
-	//Set global variable with position to reach in step
 	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
 	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
-
     right_motor_set_speed(speed_right);
     left_motor_set_speed(speed_left);
 }
@@ -894,9 +894,6 @@ void move(int move_chosen){
     uint16_t motor_speed = choose_motor_speed();
     switch (move_chosen)
     {
-//    case ESCAPE_OBSTACLE:
-//        escape_obstacle();
-//        break;
     case MOVE_FORWARD:
         move_forward(DEFAULT_MOVE_TIME_MS, motor_speed);
         break;
@@ -952,7 +949,6 @@ void start_leds(){
     blink_LED4(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
     blink_LED6(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
     blink_LED8(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
-
     blink_LED1(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED3(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED5(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
@@ -967,8 +963,7 @@ void turn_around(){
     motor_args.time_ms = DEFAULT_MOVE_TIME_MS / 2;
 	motor_args.speed_left = -motor_speed;
 	motor_args.speed_right = +motor_speed;
-	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
-	//a changer motor pos
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_args);
 }
 
 /**
