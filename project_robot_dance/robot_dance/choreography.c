@@ -984,6 +984,6 @@ void turn_around(){
 */
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
-    //*delay_on = delay;
-    *delay_off = delay;
+    *delay_on = delay/2;
+    *delay_off = delay/2;
 }
