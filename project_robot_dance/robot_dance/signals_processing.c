@@ -10,7 +10,7 @@
 #include "signals_processing.h"
 
 #define MIC_OUTPUT LEFT_OUTPUT
-#define LOW_FILTER_PITCH_I 8
+#define LOW_FILTER_PITCH_I 5
 #define HIGH_FILTER_PITCH_I 256
 #define LOW_FILTER_CORR_I 4
 #define HIGH_FILTER_CORR_I 46
@@ -242,7 +242,7 @@ uint16_t get_music_interval(void){
 	return music_interval;
 }
 
-//we take the maximum pitch between 125hz (3d key) and 4000hz on one side only which gives us the index 8 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
+//we take the maximum pitch between around 70hz (2d key) and 4000hz on one side only which gives us the index 5 to 256 as it goes from 0 to 512 in incremented values of 15.625hz
 uint16_t get_music_pitch(void){
 	uint16_t min_range = LOW_FILTER_PITCH_I;
 	uint16_t max_range = HIGH_FILTER_PITCH_I;

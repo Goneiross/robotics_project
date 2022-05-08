@@ -593,29 +593,27 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 		uint8_t b = 255;
 		if(pitch < COLOR_HZ_RANGE/6){
 			b =0;
-			g = (pitch * 6 * 255) / COLOR_HZ_RANGE;
-		} else if(pitch < 2*COLOR_HZ_RANGE/6){
-			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE+2*255;
+			g = (pitch * 6 * 255)/COLOR_HZ_RANGE;
+		} else if(pitch < 2 * COLOR_HZ_RANGE/6){
+			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 2 * 255;
 			b=0;
 
-		} else if(pitch< 3*COLOR_HZ_RANGE/6){
+		} else if(pitch < 3 * COLOR_HZ_RANGE/6){
 			r = 0;
-			b = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
-		} else if(pitch < 4*COLOR_HZ_RANGE/6){
+			b = (pitch * 6 * 255)/COLOR_HZ_RANGE - 2 * 255;
+		} else if(pitch < 4 * COLOR_HZ_RANGE/6){
 			r=0;
-			g=0;
-			b=0;
+			g=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 4 * 255;
 
 		} else if(pitch < 5*COLOR_HZ_RANGE/6){
-			r=0;
+			r=(pitch * 6 * 255) / COLOR_HZ_RANGE - 4 * 255;
 			g=0;
-			b=0;
 
 		} else if(pitch < COLOR_HZ_RANGE){
-			r=0;
 			g=0;
-			b=0;
+			b=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 6 * 255;
 		}
+		chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
 		set_rgb_led(*led_number, r, g , b);
 		/*if (pitch < PITCH_0 ) {
 			set_rgb_led(*led_number, 255, 0 , 0);
@@ -974,5 +972,5 @@ void turn_around(){
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
     *delay_on = delay/2;
-    //*delay_off = delay/2;
+    *delay_off = delay/2;
 }
