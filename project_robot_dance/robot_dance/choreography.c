@@ -19,6 +19,7 @@
 #include "signals_processing.h"
 
 #define MOVE_NB 4
+#define BODY_BLINK_DELAY 200
 #define DEFAULT_BLINK_DELAY_ON 50
 #define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 10
@@ -338,13 +339,19 @@ static THD_FUNCTION(ThdLed, arg) {
     	gpio = GPIOD;
     }
     while(1){
-    	wait_onset();
-		palWritePad(gpio, led, 1); 
+    	bool on = 0;
+    	if(gpio == GPIOB){
+    		on = 1;
+    		wait_big_onset();
+    	} else{
+    		wait_onset();
+    	}
+    	palWritePad(gpio, led, !on);
 		for (int i = 0; i < iterations; i ++){
-			chThdSleepMilliseconds(delay_off);
-			palWritePad(gpio, led, 0);
+			palWritePad(gpio, led, on);
 			chThdSleepMilliseconds(delay_on);
-			palWritePad(gpio, led, 1);
+			palWritePad(gpio, led, !on);
+			chThdSleepMilliseconds(delay_off);
 		}
     }
     chThdExit(0);
@@ -949,6 +956,7 @@ void start_leds(){
     blink_LED3(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED5(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED7(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED_BODY(1, BODY_BLINK_DELAY, BODY_BLINK_DELAY);
 }
 
 /**

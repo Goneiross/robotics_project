@@ -17,8 +17,14 @@
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
 #define ONSET_NB_SEND 4
+#define ONSET_COEF 1
+#define BIG_ONSET_COEF 3
+#define COMPRESSION_LOG_FACTOR 100
+#define COMPRESSION_SCALE 100
 
+#ifdef DATA_TO_COMPUTER
 #define TIME_TO_WAIT  10
+#endif
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 bool chBSemGetState(binary_semaphore_t *bsp);
@@ -42,6 +48,7 @@ static float rms_frequency_old = 0;
 static float auto_correlation[2*WINDOW_SIZE];
 
 static BSEMAPHORE_DECL(onset_sem, TRUE);
+static BSEMAPHORE_DECL(big_onset_sem, TRUE);
 static BSEMAPHORE_DECL(tempo_update_sem, FALSE);
 
 #ifdef DATA_TO_COMPUTER
@@ -120,7 +127,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 //		}
 		onset_detection(&mean_rms_derivative_fft, abs_freq_derivative);
 
-		#ifdef DATA_TO_COMPUTER
+		#ifdef DATA_TO_COMPUTER1
 		static int wait = 0;
 		if(wait == TIME_TO_WAIT){
 			wait = 0;
@@ -133,7 +140,10 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 }
 
 void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative){
-	if((*mean_rms_derivative_fft) <= abs_freq_derivative){
+	if((*mean_rms_derivative_fft)*BIG_ONSET_COEF <= abs_freq_derivative){
+		chBSemSignal(&big_onset_sem);
+	}
+	if((*mean_rms_derivative_fft)*ONSET_COEF <= abs_freq_derivative){
 	//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_freq_derivative, mean_rms_derivative_fft);
 		for(uint8_t i=0; i<ONSET_NB_SEND; i++){
 			chBSemSignal(&onset_sem);
@@ -155,13 +165,16 @@ void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft){
 			rms_frequencies_w[i+1] = rms_frequencies[i];
 		}
 		arm_sub_f32(rms_frequencies, rms_frequencies_w, rms_frequencies_w,WINDOW_SIZE);
-		//arm_abs_f32(rms_frequencies_w, rms_frequencies_w, WINDOW_SIZE);
+		arm_abs_f32(rms_frequencies_w, rms_frequencies_w, WINDOW_SIZE);
 		arm_rms_f32(rms_frequencies_w,WINDOW_SIZE,mean_rms_derivative_fft);
 		for(uint8_t i=0; i < WINDOW_SIZE; i++){
 			rms_frequencies_w[i] = rms_frequencies_w[i]-(*mean_rms_derivative_fft);
 		}
 		arm_correlate_f32(rms_frequencies_w, WINDOW_SIZE, rms_frequencies_w, WINDOW_SIZE, auto_correlation);
 		chBSemReset(&tempo_update_sem,true);
+		#ifdef DATA_TO_COMPUTER2
+		chBSemSignal(&sendToComputer_sem);
+		#endif
 	}
 }
 
@@ -169,14 +182,12 @@ float derivate_frequencies(uint8_t *rms_frequencies_i){
 		float abs_freq_derivative = 0;
 		float rms_frequency = 0;
 		arm_rms_f32(mic_fft,CHUNK_SIZE/2,&rms_frequency);
+		rms_frequency = COMPRESSION_SCALE*log(1+ COMPRESSION_LOG_FACTOR * rms_frequency);
 		rms_frequencies[*rms_frequencies_i] = rms_frequency;
 		(*rms_frequencies_i) ++;
-		//chBSemSignal(&sendToComputer_sem);
-
 		abs_freq_derivative = fabs(rms_frequency - rms_frequency_old);
-		//chprintf((BaseSequentialStream *)&SD3, "rms old: %f   ,  rms new: %f,  abs_freq_derivative:%f \n", rms_frequency, rms_frequency_old, abs_freq_derivative);
 		rms_frequency_old = rms_frequency;
-		//chprintf((BaseSequentialStream *)&SD3, "abs_freq_derivative %f\n", abs_freq_derivative);
+
 		return abs_freq_derivative;
 }
 
@@ -207,6 +218,10 @@ float* get_auto_correlation(void){
 */
 void wait_onset(void){
 	chBSemWait(&onset_sem);
+}
+
+void wait_big_onset(void){
+	chBSemWait(&big_onset_sem);
 }
 
 void wait_tempo_update(void){
@@ -308,7 +323,7 @@ uint16_t get_music_pitch(void){
 
 uint16_t get_music_amplitude(void){
 	uint16_t amplitude = (uint16_t)rms_frequency_old;
-	return amplitude;
+	return 100;
 }
 
 #ifdef DATA_TO_COMPUTER
