@@ -17,7 +17,8 @@
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
 #define ONSET_NB_SEND 4
-#define TIME_TO_WAIT  1
+
+#define TIME_TO_WAIT  10
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 bool chBSemGetState(binary_semaphore_t *bsp);
@@ -43,6 +44,10 @@ static float auto_correlation[2*WINDOW_SIZE];
 static BSEMAPHORE_DECL(onset_sem, TRUE);
 static BSEMAPHORE_DECL(tempo_update_sem, FALSE);
 
+#ifdef DATA_TO_COMPUTER
+static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
+#endif
+
 void signals_processing_init(void){
 	mic_start(&processAudioData);
 	arm_rfft_fast_init_f32(&arm_rfft_fast_f32_len1024, CHUNK_SIZE);
@@ -58,7 +63,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	*
 	*/
 
-	static int wait10 = 0;
 	//static uint16_t mic_input_i = 0;
 	static bool input_number = 0;
 	//static bool buffer_full = false;
@@ -68,31 +72,11 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 	bool buffer_full = false;
 
-	/*for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		if(input_number == 0){
-			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
-		}
-		if(input_number == 1){
-			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
-		}
-		mic_input_i++;
-
-		if(mic_input_i >= (CHUNK_SIZE)){
-			input_number = !input_number;
-			mic_input_i = 0;
-			buffer_full = true;
-		}
-	}*/
 	buffer_full = fill_mic_input_arrays(data, num_samples, &input_number);
 
 	if(buffer_full){
 		float abs_freq_derivative = 0;
-		/*if(input_number == 1){
-			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_fft,0);
-		} else {
-			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_fft,0);
-		}
-		arm_cmplx_mag_f32(mic_cmplx_fft, mic_fft, CHUNK_SIZE/2);*/
+
 		real_fft_magnitude(&input_number);
 
 //		arm_rms_f32(mic_fft,CHUNK_SIZE/2,&rms_frequency);
@@ -136,11 +120,15 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 //		}
 		onset_detection(&mean_rms_derivative_fft, abs_freq_derivative);
 
-//		if(wait10 == TIME_TO_WAIT){
-//			wait10 = 0;
-//		} else {
-//			wait10 ++;
-//		}
+		#ifdef DATA_TO_COMPUTER
+		static int wait = 0;
+		if(wait == TIME_TO_WAIT){
+			wait = 0;
+			chBSemSignal(&sendToComputer_sem);
+		} else {
+			wait ++;
+		}
+		#endif
 	}
 }
 
@@ -201,6 +189,7 @@ void real_fft_magnitude(bool* input_number){
 	arm_cmplx_mag_f32(mic_cmplx_fft, mic_fft, CHUNK_SIZE/2);
 }
 
+#ifdef DATA_TO_COMPUTER
 float* get_audio_buffer_ptr(void){
 		return mic_fft;
 }
@@ -211,6 +200,7 @@ float* get_rms_frequencies(void){
 float* get_auto_correlation(void){
 	return auto_correlation;
 }
+#endif
 
 /**
 * @brief wait for the onset to be detected and sent on the semaphore
@@ -320,3 +310,9 @@ uint16_t get_music_amplitude(void){
 	uint16_t amplitude = (uint16_t)rms_frequency_old;
 	return amplitude;
 }
+
+#ifdef DATA_TO_COMPUTER
+void wait_send_to_computer(void){
+	chBSemWait(&sendToComputer_sem);
+}
+#endif
