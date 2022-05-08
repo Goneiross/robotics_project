@@ -772,6 +772,9 @@ int choose_move(uint8_t old_move_nb){
 int choreography_init(){
     //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
     //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
+    motors_init();
+	detection_init();
+	signals_processing_init();
     spi_comm_start();
     start_leds();
     return 0;

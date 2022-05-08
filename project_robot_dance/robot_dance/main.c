@@ -12,8 +12,6 @@
 #include <usbcfg.h>
 #include <motors.h>
 
-#include "IR_detection.h"
-#include "signals_processing.h"
 #include "choreography.h"
 
 messagebus_t bus;
@@ -46,9 +44,6 @@ int main(void)
 	usb_start();
   
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
-	motors_init();
-	detection_init();
-	signals_processing_init();
 	choreography_init();
 
 	//chprintf((BaseSequentialStream *)&SD3, "===================================================================\n");
