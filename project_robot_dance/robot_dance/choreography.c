@@ -613,7 +613,7 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 			g=0;
 			b=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 6 * 255;
 		}
-		chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
+		//chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
 		set_rgb_led(*led_number, r, g , b);
 		/*if (pitch < PITCH_0 ) {
 			set_rgb_led(*led_number, 255, 0 , 0);

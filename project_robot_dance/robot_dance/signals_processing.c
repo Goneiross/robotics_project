@@ -17,20 +17,25 @@
 #define AUDIO_PROCESS_TIME 69
 #define MINUTE_IN_MS 60000
 #define ONSET_NB_SEND 4
+#define TIME_TO_WAIT  1
 
 uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 bool chBSemGetState(binary_semaphore_t *bsp);
-bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number);
+bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool* input_number);
+void real_fft_magnitude(bool* input_number);
+float derivate_frequencies(uint8_t *rms_frequencies_i);
+void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft);
+void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative);
 
-static float mic_output[CHUNK_SIZE/2];
-static float mic_cmplx_output[CHUNK_SIZE];
+static float mic_fft[CHUNK_SIZE/2];
+static float mic_cmplx_fft[CHUNK_SIZE];
 
 static float mic_input0[CHUNK_SIZE];
 static float mic_input1[CHUNK_SIZE];
 static arm_rfft_fast_instance_f32 arm_rfft_fast_f32_len1024;
 
 static float rms_frequencies[WINDOW_SIZE];
-static float rms_frequencies_shift[WINDOW_SIZE];
+static float rms_frequencies_w[WINDOW_SIZE];
 static float rms_frequency_old = 0;
 
 static float auto_correlation[2*WINDOW_SIZE];
@@ -54,13 +59,11 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 	*/
 
 	static int wait10 = 0;
-	int time_to_wait = 5;
 	//static uint16_t mic_input_i = 0;
 	static bool input_number = 0;
 	//static bool buffer_full = false;
 	static uint8_t rms_frequencies_i = 0;
-	float abs_derivative = 0;
-	float rms_frequency = 0;
+	//float rms_frequency = 0;
 	static float mean_rms_derivative_fft = 0;
 
 	bool buffer_full = false;
@@ -80,66 +83,130 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 			buffer_full = true;
 		}
 	}*/
-	buffer_full = fill_mic_input(data, num_samples, &input_number);
+	buffer_full = fill_mic_input_arrays(data, num_samples, &input_number);
 
 	if(buffer_full){
-		if(input_number == 1){
-			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_output,0);
+		float abs_freq_derivative = 0;
+		/*if(input_number == 1){
+			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_fft,0);
 		} else {
-			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_output,0);
+			arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_fft,0);
 		}
-		arm_cmplx_mag_f32(mic_cmplx_output, mic_output, CHUNK_SIZE/2);
-		arm_rms_f32(&mic_output,CHUNK_SIZE/2,&rms_frequency);
-		rms_frequencies[rms_frequencies_i] = rms_frequency;
-		rms_frequencies_i ++;
-		//chBSemSignal(&sendToComputer_sem);
+		arm_cmplx_mag_f32(mic_cmplx_fft, mic_fft, CHUNK_SIZE/2);*/
+		real_fft_magnitude(&input_number);
 
-		abs_derivative = fabs(rms_frequency - rms_frequency_old);
-		//chprintf((BaseSequentialStream *)&SD3, "rms old: %f   ,  rms new: %f,  abs_derivative:%f \n", rms_frequency, rms_frequency_old, abs_derivative);
-		rms_frequency_old = rms_frequency;
+//		arm_rms_f32(mic_fft,CHUNK_SIZE/2,&rms_frequency);
+//		rms_frequencies[rms_frequencies_i] = rms_frequency;
+//		rms_frequencies_i ++;
+//		//chBSemSignal(&sendToComputer_sem);
+//
+//		abs_freq_derivative = fabs(rms_frequency - rms_frequency_old);
+//		//chprintf((BaseSequentialStream *)&SD3, "rms old: %f   ,  rms new: %f,  abs_freq_derivative:%f \n", rms_frequency, rms_frequency_old, abs_freq_derivative);
+//		rms_frequency_old = rms_frequency;
+		abs_freq_derivative = derivate_frequencies(&rms_frequencies_i);
 
-		if(rms_frequencies_i >= (WINDOW_SIZE)){
-			rms_frequencies_i = 0;
-			rms_frequencies_shift[0] = rms_frequencies[0];
-			for(uint8_t i=0; i < WINDOW_SIZE-1; i++){
-				rms_frequencies_shift[i+1] = rms_frequencies[i];
-			}
-			arm_sub_f32(&rms_frequencies,&rms_frequencies_shift,&rms_frequencies_shift,WINDOW_SIZE);
-			arm_abs_f32(&rms_frequencies_shift,&rms_frequencies_shift,WINDOW_SIZE);
-			arm_rms_f32(&rms_frequencies_shift,WINDOW_SIZE,&mean_rms_derivative_fft);
-			for(uint8_t i=0; i < WINDOW_SIZE; i++){
-				rms_frequencies_shift[i] = rms_frequencies_shift[i]-mean_rms_derivative_fft;
-			}
-			arm_correlate_f32(&rms_frequencies_shift,WINDOW_SIZE,&rms_frequencies_shift,WINDOW_SIZE,&auto_correlation);
-			chBSemReset(&tempo_update_sem,true);
+//		if(rms_frequencies_i >= (WINDOW_SIZE)){
+//			rms_frequencies_i = 0;
+//			rms_frequencies_w[0] = rms_frequencies[0];
+//			for(uint8_t i=0; i < WINDOW_SIZE-1; i++){
+//				rms_frequencies_w[i+1] = rms_frequencies[i];
+//			}
+//			arm_sub_f32(&rms_frequencies,&rms_frequencies_w,&rms_frequencies_w,WINDOW_SIZE);
+//			arm_abs_f32(&rms_frequencies_w,&rms_frequencies_w,WINDOW_SIZE);
+//			arm_rms_f32(&rms_frequencies_w,WINDOW_SIZE,&mean_rms_derivative_fft);
+//			for(uint8_t i=0; i < WINDOW_SIZE; i++){
+//				rms_frequencies_w[i] = rms_frequencies_w[i]-mean_rms_derivative_fft;
+//			}
+//			arm_correlate_f32(&rms_frequencies_w,WINDOW_SIZE,&rms_frequencies_w,WINDOW_SIZE,&auto_correlation);
+//			chBSemReset(&tempo_update_sem,true);
+//		}
+		auto_corr_freq(&rms_frequencies_i, &mean_rms_derivative_fft);
+
+//		if(mean_rms_derivative_fft <= abs_freq_derivative){
+//			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_freq_derivative, mean_rms_derivative_fft);
+//			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+//				chBSemSignal(&onset_sem);
+//			}
+//			//chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
+//			if(chBSemGetState(&tempo_update_sem)){
+//				for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+//					chBSemSignal(&tempo_update_sem);
+//				}
+//			}
+//		}
+		onset_detection(&mean_rms_derivative_fft, abs_freq_derivative);
+
+//		if(wait10 == TIME_TO_WAIT){
+//			wait10 = 0;
+//		} else {
+//			wait10 ++;
+//		}
+	}
+}
+
+void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative){
+	if((*mean_rms_derivative_fft) <= abs_freq_derivative){
+	//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_freq_derivative, mean_rms_derivative_fft);
+		for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+			chBSemSignal(&onset_sem);
 		}
-		if(mean_rms_derivative_fft <= abs_derivative){
-			//chprintf((BaseSequentialStream *)&SD3, "value at this time: %f   ,    mean_derivative: %f \n", abs_derivative, mean_rms_derivative_fft);
+				//chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
+		if(chBSemGetState(&tempo_update_sem)){
 			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
-				chBSemSignal(&onset_sem);
+				chBSemSignal(&tempo_update_sem);
 			}
-			//chprintf((BaseSequentialStream *)&SD3, "update state %d\n",chBSemGetState(&tempo_update_sem));
-			if(chBSemGetState(&tempo_update_sem)){
-				for(uint8_t i=0; i<ONSET_NB_SEND; i++){
-					chBSemSignal(&tempo_update_sem);
-				}
-			}
-		}
-
-		if(wait10 == time_to_wait){
-			wait10 = 0;
-		} else {
-			wait10 ++;
 		}
 	}
 }
 
+void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft){
+	if((*rms_frequencies_i) >= (WINDOW_SIZE)){
+		(*rms_frequencies_i) = 0;
+		rms_frequencies_w[0] = rms_frequencies[0];
+		for(uint8_t i=0; i < WINDOW_SIZE-1; i++){
+			rms_frequencies_w[i+1] = rms_frequencies[i];
+		}
+		arm_sub_f32(rms_frequencies, rms_frequencies_w, rms_frequencies_w,WINDOW_SIZE);
+		//arm_abs_f32(rms_frequencies_w, rms_frequencies_w, WINDOW_SIZE);
+		arm_rms_f32(rms_frequencies_w,WINDOW_SIZE,mean_rms_derivative_fft);
+		for(uint8_t i=0; i < WINDOW_SIZE; i++){
+			rms_frequencies_w[i] = rms_frequencies_w[i]-(*mean_rms_derivative_fft);
+		}
+		arm_correlate_f32(rms_frequencies_w, WINDOW_SIZE, rms_frequencies_w, WINDOW_SIZE, auto_correlation);
+		chBSemReset(&tempo_update_sem,true);
+	}
+}
+
+float derivate_frequencies(uint8_t *rms_frequencies_i){
+		float abs_freq_derivative = 0;
+		float rms_frequency = 0;
+		arm_rms_f32(mic_fft,CHUNK_SIZE/2,&rms_frequency);
+		rms_frequencies[*rms_frequencies_i] = rms_frequency;
+		(*rms_frequencies_i) ++;
+		//chBSemSignal(&sendToComputer_sem);
+
+		abs_freq_derivative = fabs(rms_frequency - rms_frequency_old);
+		//chprintf((BaseSequentialStream *)&SD3, "rms old: %f   ,  rms new: %f,  abs_freq_derivative:%f \n", rms_frequency, rms_frequency_old, abs_freq_derivative);
+		rms_frequency_old = rms_frequency;
+		//chprintf((BaseSequentialStream *)&SD3, "abs_freq_derivative %f\n", abs_freq_derivative);
+		return abs_freq_derivative;
+}
+
+void real_fft_magnitude(bool* input_number){
+	if(*input_number == 1){
+		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input0,mic_cmplx_fft,0);
+	} else {
+		arm_rfft_fast_f32(&arm_rfft_fast_f32_len1024,mic_input1,mic_cmplx_fft,0);
+	}
+	arm_cmplx_mag_f32(mic_cmplx_fft, mic_fft, CHUNK_SIZE/2);
+}
+
 float* get_audio_buffer_ptr(void){
-		return mic_output;
+		return mic_fft;
 }
 
 float* get_rms_frequencies(void){
-	return rms_frequencies_shift;
+	return rms_frequencies_w;
 }
 float* get_auto_correlation(void){
 	return auto_correlation;
@@ -172,21 +239,21 @@ bool chBSemGetState(binary_semaphore_t *bsp){
 	return state;
 }
 
-bool fill_mic_input(int16_t *data, uint16_t num_samples, bool* input_number){
+bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool* input_number){
 	static uint16_t mic_input_i = 0;
 	//static bool input_number = 0;
 	bool buffer_full = false;
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		if(*input_number == 0){
+		if((*input_number) == 0){
 			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
 		}
-		if(*input_number == 1){
+		if((*input_number) == 1){
 			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
 		}
 		mic_input_i++;
 
 		if(mic_input_i >= (CHUNK_SIZE)){
-			*input_number = !(*input_number);
+			(*input_number) = !(*input_number);
 			mic_input_i = 0;
 			buffer_full = true;
 		}
@@ -220,8 +287,6 @@ uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t ma
 * @return tempo
 */
 uint8_t get_music_tempo(void){
-	uint16_t min_range = 4+WINDOW_SIZE;
-	uint16_t max_range = 46+WINDOW_SIZE;
 	uint16_t interval = get_music_interval();
 	uint8_t tempo = (uint8_t)((float)MINUTE_IN_MS/(float)interval);
 	return tempo;
@@ -246,7 +311,7 @@ uint16_t get_music_interval(void){
 uint16_t get_music_pitch(void){
 	uint16_t min_range = LOW_FILTER_PITCH_I;
 	uint16_t max_range = HIGH_FILTER_PITCH_I;
-	uint32_t frequency = find_maximum_index(mic_output, min_range, max_range) * 15625;
+	uint32_t frequency = find_maximum_index(mic_fft, min_range, max_range) * 15625;
 	//arm_max_f32  il est possible d'utiliser le dsp mais on aura pas de filtre à ce moment
 	return (uint16_t)(frequency/1000);
 }
