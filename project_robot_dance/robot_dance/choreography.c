@@ -33,7 +33,7 @@
 #define MOTOR_TURTLE_SPEED 100
 #define MOTOR_MIN_SPEED 100
 
-#define SOUND_AMP_MIN 80
+#define SOUND_AMP_MIN 500
 
 #define TEMPO_0 60
 #define TEMPO_1 80
@@ -43,13 +43,6 @@
 #define TEMPO_5 160
 
 #define TEMPO_SPEED_COEF 10
-
-#define PITCH_0 80
-#define PITCH_1 160
-#define PITCH_2 320
-#define PITCH_3 630
-#define PITCH_4 1300
-#define PITCH_5 2500
 
 #define MOTOR_SPEED_LIMIT   13 // [cm/s]
 #define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
@@ -622,21 +615,6 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 		}
 		//chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
 		set_rgb_led(*led_number, r, g , b);
-		/*if (pitch < PITCH_0 ) {
-			set_rgb_led(*led_number, 255, 0 , 0);
-		} else if (pitch < PITCH_1) {
-			set_rgb_led(*led_number, 255, 127, 0);
-		} else if (pitch < PITCH_2) {
-			set_rgb_led(*led_number, 255, 255, 0);
-		} else if (pitch < PITCH_3) {
-			set_rgb_led(*led_number, 0, 255, 0);
-		} else if (pitch < PITCH_4) {
-			set_rgb_led(*led_number, 0, 0, 255);
-		} else if (pitch < PITCH_5) {
-			set_rgb_led(*led_number, 75, 0, 130);
-		} else {
-			set_rgb_led(*led_number, 148, 0, 211);
-		}*/
 	}
 }
 
@@ -775,8 +753,8 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
+    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
