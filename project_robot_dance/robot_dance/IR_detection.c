@@ -29,6 +29,9 @@ void compute_distance(void);
 void debug_detection(int level);
 uint8_t find_min_obstacle_distance_index(void);
 
+/**
+* @brief Thread to update obstacles 
+**/
 static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
     chRegSetThreadName(__FUNCTION__);
@@ -93,6 +96,23 @@ int detection_init(){
 }
 
 /**
+* @brief Find the nearest obstacle index
+*
+* @return The index of the nearest obstacle
+*/
+uint8_t find_min_obstacle_distance_index(){
+    uint8_t min_index = 0;
+    uint16_t min = obstacle_dist[0];
+    for (uint8_t i = 1; i < LED_IR_nb; i++){
+        if (obstacle_dist[i] < min){
+            min_index = i;
+            min = obstacle_dist[i];
+        }
+    }
+    return min_index;
+}
+
+/**
 * @brief Returns true if there is an obstacle
 *
 * @return Bool true if obstacle
@@ -119,21 +139,4 @@ void update_obstacle_array(bool *obstacle){
     if (obstacle_dist[min_index] < THRESHOLD_DIST) {
             obstacle[min_index] = true;
     }
-}
-
-/**
-* @brief Find the nearest obstacle index
-*
-* @return The index of the nearest obstacle
-*/
-uint8_t find_min_obstacle_distance_index(){
-    uint8_t min_index = 0;
-    uint16_t min = obstacle_dist[0];
-    for (uint8_t i = 1; i < LED_IR_nb; i++){
-        if (obstacle_dist[i] < min){
-            min_index = i;
-            min = obstacle_dist[i];
-        }
-    }
-    return min_index;
 }

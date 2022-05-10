@@ -9,30 +9,30 @@
 
 #include "signals_processing.h"
 
-#define MIC_OUTPUT LEFT_OUTPUT
-#define LOW_FILTER_PITCH_I 5
-#define HIGH_FILTER_PITCH_I 256
-#define LOW_FILTER_CORR_I 4
-#define HIGH_FILTER_CORR_I 46
 #define AUDIO_PROCESS_TIME 69
-#define MINUTE_IN_MS 60000
-#define ONSET_NB_SEND 4
-#define ONSET_COEF 1
 #define BIG_ONSET_COEF 3
 #define COMPRESSION_LOG_FACTOR 100
 #define COMPRESSION_SCALE 100
+#define HIGH_FILTER_CORR_I 46
+#define HIGH_FILTER_PITCH_I 256
+#define LOW_FILTER_CORR_I 4
+#define LOW_FILTER_PITCH_I 5
+#define ONSET_COEF 1
+#define ONSET_NB_SEND 4
+#define MIC_OUTPUT LEFT_OUTPUT
+#define MINUTE_IN_MS 60000
 
 #ifdef DATA_TO_COMPUTER
 #define TIME_TO_WAIT  10
 #endif
 
-uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
-bool chBSemGetState(binary_semaphore_t *bsp);
-bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool* input_number);
-void real_fft_magnitude(bool* input_number);
-float derivate_frequencies(uint8_t *rms_frequencies_i);
 void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft);
+bool chBSemGetState(binary_semaphore_t *bsp);
+float derivate_frequencies(uint8_t *rms_frequencies_i);
+bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool* input_number);
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range);
 void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative);
+void real_fft_magnitude(bool* input_number);
 
 static float mic_fft[CHUNK_SIZE/2];
 static float mic_cmplx_fft[CHUNK_SIZE];
@@ -54,70 +54,7 @@ static BSEMAPHORE_DECL(tempo_update_sem, FALSE);
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 #endif
 
-/**
-* @brief initialise microphone start and fft parameters
-*/
-void signals_processing_init(void){
-	mic_start(&processAudioData);
-	arm_rfft_fast_init_f32(&arm_rfft_fast_f32_len1024, CHUNK_SIZE);
-}
-
-/**
-* @brief Function called by the thread of the microphone to process the signal.
-*
-* @param data Data received from the microphone.
-* @param num_samples Number of samples received by the microphone.
-*/
-void processAudioData(int16_t *data, uint16_t num_samples){
-
-	static bool input_number = 0;
-	static uint8_t rms_frequencies_i = 0;
-	static float mean_rms_derivative_fft = 0;
-
-	bool buffer_full = false;
-	buffer_full = fill_mic_input_arrays(data, num_samples, &input_number);
-
-	if(buffer_full){
-		float abs_freq_derivative = 0;
-
-		real_fft_magnitude(&input_number);
-		abs_freq_derivative = derivate_frequencies(&rms_frequencies_i);
-		auto_corr_freq(&rms_frequencies_i, &mean_rms_derivative_fft);
-		onset_detection(&mean_rms_derivative_fft, abs_freq_derivative);
-
-		#ifdef DATA_TO_COMPUTER1
-		static int wait = 0;
-		if(wait == TIME_TO_WAIT){
-			wait = 0;
-			chBSemSignal(&sendToComputer_sem);
-		} else {
-			wait ++;
-		}
-		#endif
-	}
-}
-
-/**
-* @brief detect if the last change in mean frequency is big relative the mean and send a signal if it is.
-*
-* @param mean_rms_derivative_fft Pointer to the mean of the novelty function.
-* @param abs_freq_derivative The absolute value of (the last change in mean(rms) frequency) * 2.
-*/
-void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative){
-	if((*mean_rms_derivative_fft)*BIG_ONSET_COEF <= abs_freq_derivative){
-		chBSemSignal(&big_onset_sem);
-	}
-	if((*mean_rms_derivative_fft)*ONSET_COEF <= abs_freq_derivative){
-		for(uint8_t i=0; i<ONSET_NB_SEND; i++){
-			chBSemSignal(&onset_sem);
-		}
-		if(chBSemGetState(&tempo_update_sem)){
-			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
-				chBSemSignal(&tempo_update_sem);
-			}
-		}
-	}
-}
+// ----- PRIVATE FUNCTIONS ----- //
 
 /**
 * @brief Compute the autocorrelation of the novelty function in order to retrieve periodicity.
@@ -147,6 +84,22 @@ void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft){
 }
 
 /**
+* @brief Completion of the library, normal version of the chBSemGetStateI function.
+*
+* @param bsp Pointer to the semaphore we want the state of.
+*
+* @return Bool, true if the semaphore is taken, false otherwise.
+*/
+bool chBSemGetState(binary_semaphore_t *bsp){
+	bool state = 0;
+	chSysLock();
+	state = chBSemGetStateI(bsp);
+	chSysUnlock();
+	return state;
+}
+
+
+/**
 * @brief Compute the rms value of the last fft spectrum and stores it in rms_frequencies[] to get a novelty function.
 *
 * @param rms_frequencies_i Pointer to the index of the array of rms frequencies to fill.
@@ -163,8 +116,77 @@ float derivate_frequencies(uint8_t *rms_frequencies_i){
 		(*rms_frequencies_i) ++;
 		abs_freq_derivative = fabs(rms_frequency - rms_frequency_old);
 		rms_frequency_old = rms_frequency;
-
 		return abs_freq_derivative;
+}
+
+/**
+* @brief Fill the arrays mic_input0 or mic_input1 that is not full yet with the good data.
+*
+* @param data Pointer to the data received from the microphone.
+* @param num_samples Number of samples received from the microphone.
+* @param input_number Pointer to the index of the input array to fill.
+*
+* @return Bool indicating if the buffer is full yet.
+*/
+bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool *input_number){
+	static uint16_t mic_input_i = 0;
+	bool buffer_full = false;
+	for(uint16_t i = 0 ; i < num_samples ; i+=4){
+		if((*input_number) == 0){
+			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		if((*input_number) == 1){
+			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
+		}
+		mic_input_i++;
+		if(mic_input_i >= (CHUNK_SIZE)){
+			(*input_number) = !(*input_number);
+			mic_input_i = 0;
+			buffer_full = true;
+		}
+	}
+	return buffer_full;
+}
+
+/**
+* @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max.
+*
+* @param array_buffer Buffer from which the max value has to be found.
+* @param min_range Lower bound index to start searching from.
+* @param max_range Higher bound index to stop searching for it.
+*
+* @return The uint_t of the index of the max
+*/
+uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
+	uint16_t max_index = 0;
+	for(uint16_t i = min_range; i < max_range; i++){
+		if(array_buffer[i] > array_buffer[max_index]){
+			max_index = i;
+		}
+	}
+	return max_index;
+}
+
+/**
+* @brief detect if the last change in mean frequency is big relative the mean and send a signal if it is.
+*
+* @param mean_rms_derivative_fft Pointer to the mean of the novelty function.
+* @param abs_freq_derivative The absolute value of (the last change in mean(rms) frequency) * 2.
+*/
+void onset_detection(float *mean_rms_derivative_fft, float abs_freq_derivative){
+	if((*mean_rms_derivative_fft)*BIG_ONSET_COEF <= abs_freq_derivative){
+		chBSemSignal(&big_onset_sem);
+	}
+	if((*mean_rms_derivative_fft)*ONSET_COEF <= abs_freq_derivative){
+		for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+			chBSemSignal(&onset_sem);
+		}
+		if(chBSemGetState(&tempo_update_sem)){
+			for(uint8_t i=0; i<ONSET_NB_SEND; i++){
+				chBSemSignal(&tempo_update_sem);
+			}
+		}
+	}
 }
 
 /**
@@ -180,6 +202,8 @@ void real_fft_magnitude(bool *input_number){
 	}
 	arm_cmplx_mag_f32(mic_cmplx_fft, mic_fft, CHUNK_SIZE/2);
 }
+
+// ----- PUBLIC FUNCTIONS ----- //
 
 #ifdef DATA_TO_COMPUTER
 /**
@@ -208,119 +232,27 @@ float* get_rms_frequencies(void){
 float* get_auto_correlation(void){
 	return auto_correlation;
 }
+
+/**
+* @brief Send a signal on the semaphore when data are available for debug.
+*/
+void wait_send_to_computer(void){
+	chBSemWait(&sendToComputer_sem);
+}
 #endif
 
 /**
-* @brief Wait for the onset to be detected and sent on the semaphore.
-*/
-void wait_onset(void){
-	chBSemWait(&onset_sem);
-}
-
-/**
-* @brief Wait for a big onset to be detected and sent on the semaphore.
-*/
-void wait_big_onset(void){
-	chBSemWait(&big_onset_sem);
-}
-
-/**
-* @brief Wait for an onset to send a signal on the tempo_update_semaphore.
-*/
-void wait_tempo_update(void){
-	chBSemWait(&tempo_update_sem);
-}
-
-/**
-* @brief Retrieve the state of the tempo update
+* @brief Get the amplitude of the sound.
 *
-* @return Bool, true if a new tempo update is available, false otherwise.
+* @return Amplitude of the last CHUNK_SIZE of the microphone in arbitrary unit.
 */
-bool state_tempo_update(void){
-	return chBSemGetState(&tempo_update_sem);
-}
-
-/**
-* @brief Wait for the onset to be detected and sent on the semaphore.
-*/
-void reset_tempo_update(void){
-	chBSemReset(&tempo_update_sem, FALSE);
-}
-
-/**
-* @brief Completion of the library, normal version of the chBSemGetStateI function.
-*
-* @param bsp Pointer to the semaphore we want the state of.
-*
-* @return Bool, true if the semaphore is taken, false otherwise.
-*/
-bool chBSemGetState(binary_semaphore_t *bsp){
-	bool state = 0;
-	chSysLock();
-	state = chBSemGetStateI(bsp);
-	chSysUnlock();
-	return state;
-}
-
-/**
-* @brief Fill the arrays mic_input0 or mic_input1 that is not full yet with the good data.
-*
-* @param data Pointer to the data received from the microphone.
-* @param num_samples Number of samples received from the microphone.
-* @param input_number Pointer to the index of the input array to fill.
-*
-* @return Bool indicating if the buffer is full yet.
-*/
-bool fill_mic_input_arrays(int16_t *data, uint16_t num_samples, bool *input_number){
-	static uint16_t mic_input_i = 0;
-	bool buffer_full = false;
-	for(uint16_t i = 0 ; i < num_samples ; i+=4){
-		if((*input_number) == 0){
-			mic_input0[mic_input_i] = (float)data[i + MIC_BACK];
-		}
-		if((*input_number) == 1){
-			mic_input1[mic_input_i] = (float)data[i + MIC_BACK];
-		}
-		mic_input_i++;
-
-		if(mic_input_i >= (CHUNK_SIZE)){
-			(*input_number) = !(*input_number);
-			mic_input_i = 0;
-			buffer_full = true;
-		}
-	}
-	return buffer_full;
-}
-
-
-/**
-* @brief Returns the index of the maximal value in an array of positive float in the range specified between min and max.
-*
-* @param array_buffer Buffer from which the max value has to be found.
-* @param min_range Lower bound index to start searching from.
-* @param max_range Higher bound index to stop searching for it.
-*
-* @return The uint_t of the index of the max
-*/
-uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t max_range){
-	uint16_t max_index = 0;
-	for(uint16_t i = min_range; i < max_range; i++){
-		if(array_buffer[i] > array_buffer[max_index]){
-			max_index = i;
-		}
-	}
-	return max_index;
-}
-
-/**
-* @brief Get the tempo in bpm of what is recorded by the microphone.
-*
-* @return Tempo in bpm.
-*/
-uint8_t get_music_tempo(void){
-	uint16_t interval = get_music_interval();
-	uint8_t tempo = (uint8_t)((float)MINUTE_IN_MS/(float)interval);
-	return tempo;
+uint16_t get_music_amplitude(void){
+	uint16_t min_range = LOW_FILTER_PITCH_I;
+	uint16_t max_range = HIGH_FILTER_PITCH_I;
+	uint16_t index_max = 0;
+	index_max = find_maximum_index(mic_fft, min_range, max_range);
+	uint16_t amplitude = mic_fft[index_max];
+	return amplitude;
 }
 
 /**
@@ -351,24 +283,88 @@ uint16_t get_music_pitch(void){
 }
 
 /**
-* @brief Get the amplitude of the sound.
+* @brief Get the tempo in bpm of what is recorded by the microphone.
 *
-* @return Amplitude of the last CHUNK_SIZE of the microphone in arbitrary unit.
+* @return Tempo in bpm.
 */
-uint16_t get_music_amplitude(void){
-	uint16_t min_range = LOW_FILTER_PITCH_I;
-	uint16_t max_range = HIGH_FILTER_PITCH_I;
-	uint16_t index_max = 0;
-	index_max = find_maximum_index(mic_fft, min_range, max_range);
-	uint16_t amplitude = mic_fft[index_max];
-	return amplitude;
+uint8_t get_music_tempo(void){
+	uint16_t interval = get_music_interval();
+	uint8_t tempo = (uint8_t)((float)MINUTE_IN_MS/(float)interval);
+	return tempo;
 }
 
-#ifdef DATA_TO_COMPUTER
 /**
-* @brief Send a signal on the semaphore when data are available for debug.
+* @brief Function called by the thread of the microphone to process the signal.
+*
+* @param data Data received from the microphone.
+* @param num_samples Number of samples received by the microphone.
 */
-void wait_send_to_computer(void){
-	chBSemWait(&sendToComputer_sem);
+void processAudioData(int16_t *data, uint16_t num_samples){
+
+	static bool input_number = 0;
+	static uint8_t rms_frequencies_i = 0;
+	static float mean_rms_derivative_fft = 0;
+	bool buffer_full = false;
+	buffer_full = fill_mic_input_arrays(data, num_samples, &input_number);
+	if(buffer_full){
+		float abs_freq_derivative = 0;
+		real_fft_magnitude(&input_number);
+		abs_freq_derivative = derivate_frequencies(&rms_frequencies_i);
+		auto_corr_freq(&rms_frequencies_i, &mean_rms_derivative_fft);
+		onset_detection(&mean_rms_derivative_fft, abs_freq_derivative);
+		#ifdef DATA_TO_COMPUTER1
+		static int wait = 0;
+		if(wait == TIME_TO_WAIT){
+			wait = 0;
+			chBSemSignal(&sendToComputer_sem);
+		} else {
+			wait ++;
+		}
+		#endif
+	}
 }
-#endif
+
+/**
+* @brief Wait for the onset to be detected and sent on the semaphore.
+*/
+void reset_tempo_update(void){
+	chBSemReset(&tempo_update_sem, FALSE);
+}
+
+/**
+* @brief initialise microphone start and fft parameters
+*/
+void signals_processing_init(void){
+	mic_start(&processAudioData);
+	arm_rfft_fast_init_f32(&arm_rfft_fast_f32_len1024, CHUNK_SIZE);
+}
+
+/**
+* @brief Retrieve the state of the tempo update
+*
+* @return Bool, true if a new tempo update is available, false otherwise.
+*/
+bool state_tempo_update(void){
+	return chBSemGetState(&tempo_update_sem);
+}
+
+/**
+* @brief Wait for the onset to be detected and sent on the semaphore.
+*/
+void wait_onset(void){
+	chBSemWait(&onset_sem);
+}
+
+/**
+* @brief Wait for a big onset to be detected and sent on the semaphore.
+*/
+void wait_big_onset(void){
+	chBSemWait(&big_onset_sem);
+}
+
+/**
+* @brief Wait for an onset to send a signal on the tempo_update_semaphore.
+*/
+void wait_tempo_update(void){
+	chBSemWait(&tempo_update_sem);
+}
