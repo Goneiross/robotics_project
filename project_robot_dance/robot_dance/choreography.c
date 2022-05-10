@@ -19,6 +19,7 @@
 #include "signals_processing.h"
 
 #define MOVE_NB 4
+#define BODY_BLINK_DELAY 200
 #define DEFAULT_BLINK_DELAY_ON 50
 #define DEFAULT_BLINK_DELAY_OFF 50
 #define DEFAULT_BLINK_ITERATION 10
@@ -32,7 +33,7 @@
 #define MOTOR_TURTLE_SPEED 100
 #define MOTOR_MIN_SPEED 100
 
-#define SOUND_AMP_MIN 80
+#define SOUND_AMP_MIN 500
 
 #define TEMPO_0 60
 #define TEMPO_1 80
@@ -42,13 +43,6 @@
 #define TEMPO_5 160
 
 #define TEMPO_SPEED_COEF 10
-
-#define PITCH_0 80
-#define PITCH_1 160
-#define PITCH_2 320
-#define PITCH_3 630
-#define PITCH_4 1300
-#define PITCH_5 2500
 
 #define MOTOR_SPEED_LIMIT   13 // [cm/s]
 #define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
@@ -338,13 +332,19 @@ static THD_FUNCTION(ThdLed, arg) {
     	gpio = GPIOD;
     }
     while(1){
-    	wait_onset();
-		palWritePad(gpio, led, 1); 
+    	bool on = 0;
+    	if(gpio == GPIOB){
+    		on = 1;
+    		wait_big_onset();
+    	} else{
+    		wait_onset();
+    	}
+    	palWritePad(gpio, led, !on);
 		for (int i = 0; i < iterations; i ++){
-			chThdSleepMilliseconds(delay_off);
-			palWritePad(gpio, led, 0);
+			palWritePad(gpio, led, on);
 			chThdSleepMilliseconds(delay_on);
-			palWritePad(gpio, led, 1);
+			palWritePad(gpio, led, !on);
+			chThdSleepMilliseconds(delay_off);
 		}
     }
     chThdExit(0);
@@ -593,45 +593,28 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 		uint8_t b = 255;
 		if(pitch < COLOR_HZ_RANGE/6){
 			b =0;
-			g = (pitch * 6 * 255) / COLOR_HZ_RANGE;
-		} else if(pitch < 2*COLOR_HZ_RANGE/6){
-			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE+2*255;
+			g = (pitch * 6 * 255)/COLOR_HZ_RANGE;
+		} else if(pitch < 2 * COLOR_HZ_RANGE/6){
+			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 2 * 255;
 			b=0;
 
-		} else if(pitch< 3*COLOR_HZ_RANGE/6){
+		} else if(pitch < 3 * COLOR_HZ_RANGE/6){
 			r = 0;
-			b = (pitch * 6 * 255) / COLOR_HZ_RANGE - 2 * 255;
-		} else if(pitch < 4*COLOR_HZ_RANGE/6){
+			b = (pitch * 6 * 255)/COLOR_HZ_RANGE - 2 * 255;
+		} else if(pitch < 4 * COLOR_HZ_RANGE/6){
 			r=0;
-			g=0;
-			b=0;
+			g=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 4 * 255;
 
 		} else if(pitch < 5*COLOR_HZ_RANGE/6){
-			r=0;
+			r=(pitch * 6 * 255) / COLOR_HZ_RANGE - 4 * 255;
 			g=0;
-			b=0;
 
 		} else if(pitch < COLOR_HZ_RANGE){
-			r=0;
 			g=0;
-			b=0;
+			b=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 6 * 255;
 		}
+		//chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
 		set_rgb_led(*led_number, r, g , b);
-		/*if (pitch < PITCH_0 ) {
-			set_rgb_led(*led_number, 255, 0 , 0);
-		} else if (pitch < PITCH_1) {
-			set_rgb_led(*led_number, 255, 127, 0);
-		} else if (pitch < PITCH_2) {
-			set_rgb_led(*led_number, 255, 255, 0);
-		} else if (pitch < PITCH_3) {
-			set_rgb_led(*led_number, 0, 255, 0);
-		} else if (pitch < PITCH_4) {
-			set_rgb_led(*led_number, 0, 0, 255);
-		} else if (pitch < PITCH_5) {
-			set_rgb_led(*led_number, 75, 0, 130);
-		} else {
-			set_rgb_led(*led_number, 148, 0, 211);
-		}*/
 	}
 }
 
@@ -770,11 +753,11 @@ int choose_move(uint8_t old_move_nb){
 * @return 0 if no error
 */
 int choreography_init(){
-    //chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     motors_init();
-	detection_init();
-	signals_processing_init();
+	  detection_init();
+	  signals_processing_init();
+    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -954,6 +937,7 @@ void start_leds(){
     blink_LED3(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED5(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
     blink_LED7(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF);
+    blink_LED_BODY(1, BODY_BLINK_DELAY, BODY_BLINK_DELAY);
 }
 
 /**
@@ -977,5 +961,5 @@ void turn_around(){
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off){
     uint16_t delay = get_music_interval();
     *delay_on = delay/2;
-    //*delay_off = delay/2;
+    *delay_off = delay/2;
 }
