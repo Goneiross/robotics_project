@@ -208,7 +208,6 @@ static THD_FUNCTION(ThdDance, arg) {
             	old_move_nb = move_nb;
             }
             move_nb = choose_move(old_move_nb);
-            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
             move(move_nb);
     	}
         chThdSleepMilliseconds(20);
@@ -999,25 +998,25 @@ void turn_around(){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/2;
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
-	motor_pos_args.speed_left = -motor_speed;
-	motor_pos_args.speed_right = motor_speed;
-	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-	chThdWait(pointer_thread_motor_pos);
+	  motor_pos_args.speed_left = -motor_speed;
+	  motor_pos_args.speed_right = motor_speed;
+	  pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+	  chThdWait(pointer_thread_motor_pos);
 }
 
 void turn_left(uint16_t motor_speed){
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
     motor_pos_args.position_l = PERIMETER_EPUCK/4;
-	motor_pos_args.speed_left = -motor_speed;
-	motor_pos_args.speed_right = motor_speed;
-	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-	chThdWait(pointer_thread_motor_pos);
+	  motor_pos_args.speed_left = -motor_speed;
+	  motor_pos_args.speed_right = motor_speed;
+	  pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+	  chThdWait(pointer_thread_motor_pos);
 }
 
 void turn_right(uint16_t motor_speed){
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
     motor_pos_args.position_l = PERIMETER_EPUCK/4;
-	motor_pos_args.speed_left = motor_speed;
+    motor_pos_args.speed_left = motor_speed;
 	motor_pos_args.speed_right = - motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 	chThdWait(pointer_thread_motor_pos);
