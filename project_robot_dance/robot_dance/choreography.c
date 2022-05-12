@@ -928,10 +928,9 @@ void move_backward(uint16_t time_ms, int16_t speed){
 }
 
 void move_backward_in_tempo(int16_t speed){
-    int16_t time_ms = get_music_interval();
-    motor_args.time_ms = time_ms;
-	motor_args.speed_left = speed;
-	motor_args.speed_right = speed;
+    motor_args.time_ms = get_music_interval;
+	motor_args.speed_left = -speed;
+	motor_args.speed_right = -speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
@@ -949,8 +948,7 @@ void move_forward(uint16_t time_ms, int16_t speed){
 }
 
 void move_forward_in_tempo(int16_t speed){
-    int16_t time_ms = get_music_interval();
-    motor_args.time_ms = time_ms;
+    motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
