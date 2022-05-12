@@ -62,9 +62,7 @@
 typedef enum {
 	ESCAPE_OBSTACLE,
     MOVE_FORWARD,
-    MOVE_FORWARD_IN_TEMPO,
     MOVE_BACKWARD,
-    MOVE_BACKWARD_IN_TEMPO,
     FULL_ROTATION,
     TURN_AROUND,
     DO_NOTHING,
@@ -130,6 +128,15 @@ typedef struct thd_motor_pos_args {
     int16_t speed_left;
 } thd_motor_pos_args;
 
+typedef struct thd_motor_pos_counters {
+    int32_t counter_step_right;          // in [step]
+    int32_t counter_step_left; 		    // in [step]
+    int32_t position_to_reach_right;	    // in [step]
+    int32_t position_to_reach_left;	    // in [step]
+    bool position_right_reached;
+    bool position_left_reached;
+} thd_motor_pos_counters;
+
 void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
 void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
@@ -147,12 +154,10 @@ int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left);
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters);
 void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
-void move_backward_in_tempo(int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
-void move_forward_in_tempo(int16_t speed);
 void move_full_moon();
 void move_half_moon();
 void start_leds(void);
@@ -178,12 +183,6 @@ static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
 
-static int32_t counter_step_right = 0;          // in [step]
-static int32_t counter_step_left = 0; 		    // in [step]
-static int32_t position_to_reach_right = 0;	    // in [step]
-static int32_t position_to_reach_left = 0;	    // in [step]
-static bool position_right_reached = 0;
-static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
 
 static thread_t* pointer_thread_motor_pos = NULL;
@@ -202,7 +201,7 @@ static THD_FUNCTION(ThdDance, arg) {
     	if((move_done == true) && (is_escaping == false)){
     		pointer_thread_motor_pos = NULL;
     		pointer_thread_motor = NULL;
-            if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD) || (move_nb == MOVE_BACKWARD_IN_TEMPO) || (move_nb == MOVE_FORWARD_IN_TEMPO)){
+            if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
             	old_move_nb = move_nb;
             }
             move_nb = choose_move(old_move_nb);
@@ -295,22 +294,29 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
-    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left);
-    while ((position_right_reached == false) || (position_left_reached == false)){
+    static thd_motor_pos_counters counters;
+    counters.counter_step_right = 0;    
+    counters.counter_step_left = 0; 
+    counters.position_to_reach_right = 0;
+    counters.position_to_reach_left = 0;
+    counters.position_right_reached = 0;
+    counters.position_left_reached = 0;
+    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
+    while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
-			if (position_right_reached == false){
-				counter_step_right = right_motor_get_pos();
-				if (abs(counter_step_right) >= abs(position_to_reach_right)){
-					position_right_reached = 1;
+			if (counters.position_right_reached == false){
+				counters.counter_step_right = right_motor_get_pos();
+				if (abs(counters.counter_step_right) >= abs(counters.position_to_reach_right)){
+					counters.position_right_reached = 1;
 					right_motor_set_speed(0);
 				}
 			}
-			if (position_left_reached == 0){
-				counter_step_left = left_motor_get_pos();
-				if (abs(counter_step_left) >= abs(position_to_reach_left)){
-					position_left_reached = 1;
+			if (counters.position_left_reached == 0){
+				counters.counter_step_left = left_motor_get_pos();
+				if (abs(counters.counter_step_left) >= abs(counters.position_to_reach_left)){
+					counters.position_left_reached = 1;
 					left_motor_set_speed(0);
 				}
 			}
@@ -661,10 +667,10 @@ int choose_move(uint8_t old_move_nb){
             } else if (random < 95) {
                 move = FULL_ROTATION;
             } else {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             }
         } else if (tempo < TEMPO_1) {
@@ -675,10 +681,10 @@ int choose_move(uint8_t old_move_nb){
             } else if (random < 95) {
                 move = FULL_MOON;
             } else {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             }
         } else if (tempo < TEMPO_2) {
@@ -689,10 +695,10 @@ int choose_move(uint8_t old_move_nb){
             } else if (random < 95) {
                 move = DO_NOTHING;
             } else {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             }
         } else if (tempo < TEMPO_3) {
@@ -701,10 +707,10 @@ int choose_move(uint8_t old_move_nb){
             } else if (random < 90) {
                 move = FULL_ROTATION;
             } else if (random < 95) {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             } else {
                 move = DO_NOTHING;
@@ -715,20 +721,20 @@ int choose_move(uint8_t old_move_nb){
             } else if (random < 90) {
                 move = FULL_ROTATION;
             } else if (random < 95) {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             } else {
                 move = DO_NOTHING;
             }
         } else if (tempo < TEMPO_5) {
             if (random < 70) {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             } else if (random < 90) {
                 move = TURN_AROUND;
@@ -739,10 +745,10 @@ int choose_move(uint8_t old_move_nb){
             }            
         } else {
             if (random < 70) {
-                if (old_move_nb == MOVE_FORWARD_IN_TEMPO){
-                    move = MOVE_BACKWARD_IN_TEMPO;
+                if (old_move_nb == MOVE_FORWARD){
+                    move = MOVE_BACKWARD;
                 } else {
-                    move = MOVE_FORWARD_IN_TEMPO;
+                    move = MOVE_FORWARD;
                 }
             } else if (random < 90) {
                 move = TURN_AROUND;
@@ -762,8 +768,8 @@ int choose_move(uint8_t old_move_nb){
 */
 int choreography_init(){
     motors_init();
-	  detection_init();
-	  signals_processing_init();
+	detection_init();
+	signals_processing_init();
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
     chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
@@ -864,15 +870,15 @@ void full_rotation(){
 * @param speed_right Speed of the right motor
 * @param speed_left Speed of the left motor
 */
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left){
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters){
 	right_motor_set_pos(0);
 	left_motor_set_pos(0);
-	counter_step_left = 0;
-	counter_step_right = 0;
-    position_right_reached = 0;
-    position_left_reached = 0;
-	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
-	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->counter_step_left = 0;
+	counters->counter_step_right = 0;
+    counters->position_right_reached = 0;
+    counters->position_left_reached = 0;
+	counters->position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
     right_motor_set_speed(speed_right);
     left_motor_set_speed(speed_left);
 }
@@ -905,10 +911,6 @@ void move(int move_chosen){
         move_half_moon();
     case FULL_MOON:
         move_full_moon(); 
-    case MOVE_BACKWARD_IN_TEMPO:
-        move_backward_in_tempo(motor_speed);
-    case MOVE_FORWARD_IN_TEMPO :
-        move_forward_in_tempo(motor_speed);
     default:
         break;
     }
@@ -927,13 +929,6 @@ void move_backward(uint16_t time_ms, int16_t speed){
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
 }
 
-void move_backward_in_tempo(int16_t speed){
-    motor_args.time_ms = get_music_interval;
-	motor_args.speed_left = -speed;
-	motor_args.speed_right = -speed;
-	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
-}
-
 /**
 * @brief Move the epuck forward
 *
@@ -942,13 +937,6 @@ void move_backward_in_tempo(int16_t speed){
 */
 void move_forward(uint16_t time_ms, int16_t speed){
 	motor_args.time_ms = time_ms;
-	motor_args.speed_left = speed;
-	motor_args.speed_right = speed;
-	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
-}
-
-void move_forward_in_tempo(int16_t speed){
-    motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
