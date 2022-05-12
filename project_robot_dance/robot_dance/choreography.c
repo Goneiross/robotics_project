@@ -228,7 +228,7 @@ static THD_FUNCTION(ThdEscape, arg) {
             move_done = false;
             cancel_moves();
             chThdSleepMilliseconds(50);
-            // chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
+            chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
             do {
                 escape_obstacle();
                 while (move_done == false) {
@@ -579,12 +579,12 @@ void cancel_moves(){
     if (pointer_thread_motor_pos != NULL){
 		chThdTerminate(pointer_thread_motor_pos);
 		pointer_thread_motor_pos = NULL;
-		// chprintf((BaseSequentialStream *)&SD3, "terminate_pose \n");
+		chprintf((BaseSequentialStream *)&SD3, "terminate_pose \n");
 	}
 	if (pointer_thread_motor != NULL){
 		chThdTerminate(pointer_thread_motor);
 		pointer_thread_motor = NULL;
-		// chprintf((BaseSequentialStream *)&SD3, "ex-terminate \n");
+		chprintf((BaseSequentialStream *)&SD3, "ex-terminate \n");
 	}
 }
 
@@ -839,7 +839,7 @@ void escape_obstacle(){
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else {
-    	// chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
+    	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
     }
 }
