@@ -650,11 +650,11 @@ int choose_move(uint8_t old_move_nb){
         uint8_t random = 1 + rand() % 99;
         if (tempo < TEMPO_0) {
             if (random < 70) {
-                move = FULL_ROTATION;
+                move = FULL_MOON;
             } else if (random < 90) {
-                move = TURN_AROUND;
+                move = HALF_MOON;
             } else if (random < 95) {
-                move = DO_NOTHING;
+                move = FULL_ROTATION;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
@@ -664,11 +664,11 @@ int choose_move(uint8_t old_move_nb){
             }
         } else if (tempo < TEMPO_1) {
             if (random < 70) {
-                move = FULL_ROTATION;
+                move = FULL_MOON;
             } else if (random < 90) {
-                move = TURN_AROUND;
+                move = HALF_MOON;
             } else if (random < 95) {
-                move = DO_NOTHING;
+                move = FULL_MOON;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
