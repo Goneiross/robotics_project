@@ -22,6 +22,7 @@ void wait_send_to_computer(void);
 
 void signals_processing_init(void);
 void processAudioData(int16_t *data, uint16_t num_samples);
+void wait_big_onset(void);
 void wait_onset(void);
 uint8_t get_music_tempo(void);
 uint16_t get_music_pitch(void);
