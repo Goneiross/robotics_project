@@ -920,6 +920,9 @@ void move_backward(){
     chThdWait(pointer_thread_motor);
 }
 
+/**
+* @brief Make the robot do a cross
+*/
 void move_cross(){
 	move_forward();
     if (is_escaping == false){
@@ -954,6 +957,9 @@ void move_forward(){
     chThdWait(pointer_thread_motor);
 }
 
+/**
+* @brief Make the robot do a circle
+*/
 void move_full_moon(){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK * 4;
@@ -964,6 +970,9 @@ void move_full_moon(){
     chThdWait(pointer_thread_motor_pos);
 }
 
+/**
+* @brief Make the robot do a U turn.
+*/
 void move_half_moon(){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK * 2;
@@ -1003,6 +1012,9 @@ void turn_around(){
 	  chThdWait(pointer_thread_motor_pos);
 }
 
+/**
+* @brief Make the robot turn left
+*/
 void turn_left(){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
@@ -1013,6 +1025,9 @@ void turn_left(){
 	  chThdWait(pointer_thread_motor_pos);
 }
 
+/**
+* @brief Make the robot turn right
+*/
 void turn_right(){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
