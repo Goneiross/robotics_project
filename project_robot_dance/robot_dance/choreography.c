@@ -174,10 +174,10 @@ static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
 
-static int16_t counter_step_right = 0;          // in [step]
-static int16_t counter_step_left = 0; 		    // in [step]
-static int16_t position_to_reach_right = 0;	    // in [step]
-static int16_t position_to_reach_left = 0;	    // in [step]
+static int32_t counter_step_right = 0;          // in [step]
+static int32_t counter_step_left = 0; 		    // in [step]
+static int32_t position_to_reach_right = 0;	    // in [step]
+static int32_t position_to_reach_left = 0;	    // in [step]
 static bool position_right_reached = 0;
 static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
