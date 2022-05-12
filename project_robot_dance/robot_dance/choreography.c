@@ -66,6 +66,8 @@ typedef enum {
     FULL_ROTATION,
     TURN_AROUND,
     DO_NOTHING,
+    HALF_MOON,
+    FULL_MOON,
 } move_type;
 
 /**
@@ -126,6 +128,15 @@ typedef struct thd_motor_pos_args {
     int16_t speed_left;
 } thd_motor_pos_args;
 
+typedef struct thd_motor_pos_counters {
+    int32_t counter_step_right;          // in [step]
+    int32_t counter_step_left; 		    // in [step]
+    int32_t position_to_reach_right;	    // in [step]
+    int32_t position_to_reach_left;	    // in [step]
+    bool position_right_reached;
+    bool position_left_reached;
+} thd_motor_pos_counters;
+
 void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
 void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
@@ -143,10 +154,12 @@ int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left);
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters);
 void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
+void move_full_moon();
+void move_half_moon();
 void start_leds(void);
 void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
@@ -170,12 +183,6 @@ static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
 
-static int16_t counter_step_right = 0;          // in [step]
-static int16_t counter_step_left = 0; 		    // in [step]
-static int16_t position_to_reach_right = 0;	    // in [step]
-static int16_t position_to_reach_left = 0;	    // in [step]
-static bool position_right_reached = 0;
-static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
 
 static thread_t* pointer_thread_motor_pos = NULL;
@@ -220,7 +227,7 @@ static THD_FUNCTION(ThdEscape, arg) {
             move_done = false;
             cancel_moves();
             chThdSleepMilliseconds(50);
-            chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
+            // chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
             do {
                 escape_obstacle();
                 while (move_done == false) {
@@ -287,22 +294,29 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
-    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left);
-    while ((position_right_reached == false) || (position_left_reached == false)){
+    static thd_motor_pos_counters counters;
+    counters.counter_step_right = 0;    
+    counters.counter_step_left = 0; 
+    counters.position_to_reach_right = 0;
+    counters.position_to_reach_left = 0;
+    counters.position_right_reached = 0;
+    counters.position_left_reached = 0;
+    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
+    while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
-			if (position_right_reached == false){
-				counter_step_right = right_motor_get_pos();
-				if (abs(counter_step_right) >= abs(position_to_reach_right)){
-					position_right_reached = 1;
+			if (counters.position_right_reached == false){
+				counters.counter_step_right = right_motor_get_pos();
+				if (abs(counters.counter_step_right) >= abs(counters.position_to_reach_right)){
+					counters.position_right_reached = 1;
 					right_motor_set_speed(0);
 				}
 			}
-			if (position_left_reached == 0){
-				counter_step_left = left_motor_get_pos();
-				if (abs(counter_step_left) >= abs(position_to_reach_left)){
-					position_left_reached = 1;
+			if (counters.position_left_reached == 0){
+				counters.counter_step_left = left_motor_get_pos();
+				if (abs(counters.counter_step_left) >= abs(counters.position_to_reach_left)){
+					counters.position_left_reached = 1;
 					left_motor_set_speed(0);
 				}
 			}
@@ -387,6 +401,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
     chThdExit(0);
 }
 
+// Those LED functions are needed in order to avoid issues of changed pointers values before value storage in the thread
 /**
 * @brief Blink LED1
 *
@@ -570,12 +585,12 @@ void cancel_moves(){
     if (pointer_thread_motor_pos != NULL){
 		chThdTerminate(pointer_thread_motor_pos);
 		pointer_thread_motor_pos = NULL;
-		chprintf((BaseSequentialStream *)&SD3, "terminate_pose \n");
+		// chprintf((BaseSequentialStream *)&SD3, "terminate_pose \n");
 	}
 	if (pointer_thread_motor != NULL){
 		chThdTerminate(pointer_thread_motor);
 		pointer_thread_motor = NULL;
-		chprintf((BaseSequentialStream *)&SD3, "ex-terminate \n");
+		// chprintf((BaseSequentialStream *)&SD3, "ex-terminate \n");
 	}
 }
 
@@ -646,11 +661,11 @@ int choose_move(uint8_t old_move_nb){
         uint8_t random = 1 + rand() % 99;
         if (tempo < TEMPO_0) {
             if (random < 70) {
-                move = FULL_ROTATION;
+                move = FULL_MOON;
             } else if (random < 90) {
-                move = TURN_AROUND;
+                move = HALF_MOON;
             } else if (random < 95) {
-                move = DO_NOTHING;
+                move = FULL_ROTATION;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
@@ -660,11 +675,11 @@ int choose_move(uint8_t old_move_nb){
             }
         } else if (tempo < TEMPO_1) {
             if (random < 70) {
-                move = FULL_ROTATION;
+                move = FULL_MOON;
             } else if (random < 90) {
-                move = TURN_AROUND;
+                move = HALF_MOON;
             } else if (random < 95) {
-                move = DO_NOTHING;
+                move = FULL_MOON;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
@@ -830,7 +845,7 @@ void escape_obstacle(){
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else {
-    	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
+    	// chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
     }
 }
@@ -855,15 +870,15 @@ void full_rotation(){
 * @param speed_right Speed of the right motor
 * @param speed_left Speed of the left motor
 */
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left){
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters){
 	right_motor_set_pos(0);
 	left_motor_set_pos(0);
-	counter_step_left = 0;
-	counter_step_right = 0;
-    position_right_reached = 0;
-    position_left_reached = 0;
-	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
-	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->counter_step_left = 0;
+	counters->counter_step_right = 0;
+    counters->position_right_reached = 0;
+    counters->position_left_reached = 0;
+	counters->position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
     right_motor_set_speed(speed_right);
     left_motor_set_speed(speed_left);
 }
@@ -892,6 +907,10 @@ void move(int move_chosen){
     case DO_NOTHING:
         do_nothing(DEFAULT_MOVE_TIME_MS);
         break;
+    case HALF_MOON:
+        move_half_moon();
+    case FULL_MOON:
+        move_full_moon(); 
     default:
         break;
     }
@@ -921,6 +940,24 @@ void move_forward(uint16_t time_ms, int16_t speed){
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+}
+
+void move_full_moon(){
+    uint16_t motor_speed = choose_motor_speed();
+    motor_pos_args.position_r = PERIMETER_EPUCK * 4;
+    motor_pos_args.position_l = PERIMETER_EPUCK * 2;
+	motor_pos_args.speed_left = motor_speed / 2;
+	motor_pos_args.speed_right = motor_speed;
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+}
+
+void move_half_moon(){
+    uint16_t motor_speed = choose_motor_speed();
+    motor_pos_args.position_r = PERIMETER_EPUCK * 2;
+    motor_pos_args.position_l = PERIMETER_EPUCK;
+	motor_pos_args.speed_left = motor_speed / 2;
+	motor_pos_args.speed_right = motor_speed;
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 }
 
 /**
