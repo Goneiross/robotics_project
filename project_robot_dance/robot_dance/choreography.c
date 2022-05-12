@@ -933,8 +933,8 @@ void move_forward(uint16_t time_ms, int16_t speed){
 
 void move_full_moon(){
     uint16_t motor_speed = choose_motor_speed();
-    motor_pos_args.position_r = PERIMETER_EPUCK;
-    motor_pos_args.position_l = PERIMETER_EPUCK / 2;
+    motor_pos_args.position_r = PERIMETER_EPUCK * 4;
+    motor_pos_args.position_l = PERIMETER_EPUCK * 2;
 	motor_pos_args.speed_left = motor_speed / 2;
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
@@ -942,8 +942,8 @@ void move_full_moon(){
 
 void move_half_moon(){
     uint16_t motor_speed = choose_motor_speed();
-    motor_pos_args.position_r = PERIMETER_EPUCK / 2;
-    motor_pos_args.position_l = PERIMETER_EPUCK / 4;
+    motor_pos_args.position_r = PERIMETER_EPUCK * 2;
+    motor_pos_args.position_l = PERIMETER_EPUCK;
 	motor_pos_args.speed_left = motor_speed / 2;
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
