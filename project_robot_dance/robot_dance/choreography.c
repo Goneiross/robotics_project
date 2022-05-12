@@ -923,17 +923,17 @@ void move_backward(int16_t speed){
 }
 
 void move_cross(uint16_t time_ms, int16_t speed){
-	move_forward(time_ms * 2, speed);
+	move_forward(time_ms * 2);
     if (is_escaping == false){
-        move_backward(time_ms, speed);
+        move_backward(time_ms);
         if (is_escaping == false){
             turn_left(speed);
             if (is_escaping == false){
-                move_forward(time_ms, speed);
+                move_forward(time_ms);
                 if (is_escaping == false){
-                    move_backward(time_ms * 2, speed);
+                    move_backward(time_ms * 2);
                     if (is_escaping == false){
-                        move_forward(time_ms, speed);
+                        move_forward(time_ms);
                     }
                 }
             }
