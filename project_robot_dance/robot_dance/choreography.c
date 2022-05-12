@@ -230,7 +230,7 @@ static THD_FUNCTION(ThdEscape, arg) {
             do {
                 escape_obstacle();
                 motor_speed = choose_motor_speed();
-                move_forward(DEFAULT_MOVE_ESCAPE_TIME_MS, motor_speed);
+                move_forward(motor_speed);
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
@@ -880,10 +880,10 @@ void move(int move_chosen){
     switch (move_chosen)
     {
     case MOVE_FORWARD:
-        move_forward(DEFAULT_MOVE_TIME_MS, motor_speed);
+        move_forward(motor_speed);
         break;
     case MOVE_BACKWARD:
-        move_backward(DEFAULT_MOVE_TIME_MS, motor_speed);
+        move_backward(motor_speed);
         break;
     case FULL_ROTATION:
         full_rotation();
@@ -923,17 +923,17 @@ void move_backward(int16_t speed){
 }
 
 void move_cross(uint16_t time_ms, int16_t speed){
-	move_forward(time_ms * 2);
+	move_forward(speed);
     if (is_escaping == false){
-        move_backward(time_ms);
+        move_backward(speed);
         if (is_escaping == false){
             turn_left(speed);
             if (is_escaping == false){
-                move_forward(time_ms);
+                move_forward(speed);
                 if (is_escaping == false){
-                    move_backward(time_ms * 2);
+                    move_backward(speed);
                     if (is_escaping == false){
-                        move_forward(time_ms);
+                        move_forward(speed);
                     }
                 }
             }
