@@ -160,8 +160,8 @@ void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
 void move_cross(uint16_t time_ms, int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
-void move_full_moon();
-void move_half_moon();
+void move_full_moon(void);
+void move_half_moon(void);
 void start_leds(void);
 void turn_around(void);
 void turn_left(uint16_t motor_speed);
@@ -209,8 +209,7 @@ static THD_FUNCTION(ThdDance, arg) {
             }
             move_nb = choose_move(old_move_nb);
             chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
-            // move(move_nb);
-            move(CROSS);
+            move(move_nb);
     	}
         chThdSleepMilliseconds(20);
     }
