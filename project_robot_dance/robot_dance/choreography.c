@@ -66,6 +66,8 @@ typedef enum {
     FULL_ROTATION,
     TURN_AROUND,
     DO_NOTHING,
+    HALF_MOON,
+    FULL_MOON,
 } move_type;
 
 /**
@@ -147,6 +149,8 @@ void motor_set_position(float position_r, float position_l, int16_t speed_right,
 void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
+void move_full_moon();
+void move_half_moon();
 void start_leds(void);
 void turn_around(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
@@ -892,6 +896,10 @@ void move(int move_chosen){
     case DO_NOTHING:
         do_nothing(DEFAULT_MOVE_TIME_MS);
         break;
+    case HALF_MOON:
+        move_half_moon();
+    case FULL_MOON:
+        move_full_moon(); 
     default:
         break;
     }
@@ -921,6 +929,24 @@ void move_forward(uint16_t time_ms, int16_t speed){
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+}
+
+void move_full_moon(){
+    uint16_t motor_speed = choose_motor_speed();
+    motor_pos_args.position_r = PERIMETER_EPUCK;
+    motor_pos_args.position_l = PERIMETER_EPUCK / 2;
+	motor_pos_args.speed_left = motor_speed / 2;
+	motor_pos_args.speed_right = motor_speed;
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+}
+
+void move_half_moon(){
+    uint16_t motor_speed = choose_motor_speed();
+    motor_pos_args.position_r = PERIMETER_EPUCK / 2;
+    motor_pos_args.position_l = PERIMETER_EPUCK / 4;
+	motor_pos_args.speed_left = motor_speed / 2;
+	motor_pos_args.speed_right = motor_speed;
+	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 }
 
 /**
