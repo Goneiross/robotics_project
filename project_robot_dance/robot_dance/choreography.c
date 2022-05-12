@@ -794,56 +794,56 @@ void escape_obstacle(){
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[1] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[2] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[3] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[4] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[5] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[6] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else if (obstacle[7] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
-        chThdWait(pointer_thread_motor);
+        chThdWait(pointer_thread_motor_pos);
     } else {
     	move_done = true;
     }
