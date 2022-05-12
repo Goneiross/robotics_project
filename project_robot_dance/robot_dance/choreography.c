@@ -168,10 +168,10 @@ void turn_left(void);
 void turn_right(void);
 void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
 
-static THD_WORKING_AREA(waThdDance, 1024);
-static THD_WORKING_AREA(waThdEscape, 2048);
-static THD_WORKING_AREA(waThdMotor, 2048);
-static THD_WORKING_AREA(waThdMotorPos, 2048);
+static THD_WORKING_AREA(waThdDance, 64);
+static THD_WORKING_AREA(waThdEscape, 64);
+static THD_WORKING_AREA(waThdMotor, 64);
+static THD_WORKING_AREA(waThdMotorPos, 256);
 static THD_WORKING_AREA(waThdLedLED1, 256);
 static THD_WORKING_AREA(waThdLedLED2, 256);
 static THD_WORKING_AREA(waThdLedLED3, 256);
@@ -568,7 +568,7 @@ void blink_LED_FRONT(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
 /**
 * @brief If a motor thread exists, kills it
 */
-void cancel_moves(){
+void cancel_moves(void){
     if (pointer_thread_motor_pos != NULL){
 		chThdTerminate(pointer_thread_motor_pos);
 		pointer_thread_motor_pos = NULL;
@@ -621,7 +621,7 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 *
 * @return the speed chosen for the motors
 */
-uint16_t choose_motor_speed(){
+uint16_t choose_motor_speed(void){
     uint8_t tempo = get_music_tempo();
     uint16_t speed = tempo * TEMPO_SPEED_COEF;
     if (speed > MOTOR_MAX_SPEED){
@@ -645,9 +645,9 @@ uint8_t choose_move(uint8_t old_move_nb){
         uint8_t random = 1 + rand() % 99;
         if (tempo < TEMPO_0) {
             if (random < 70) {
-                move = FULL_MOON;
-            } else if (random < 90) {
                 move = HALF_MOON;
+            } else if (random < 90) {
+                move = FULL_MOON;
             } else if (random < 95) {
                 move = FULL_ROTATION;
             } else {
@@ -659,9 +659,9 @@ uint8_t choose_move(uint8_t old_move_nb){
             }
         } else if (tempo < TEMPO_1) {
             if (random < 70) {
-                move = FULL_MOON;
-            } else if (random < 90) {
                 move = HALF_MOON;
+            } else if (random < 90) {
+                move = FULL_ROTATION;
             } else if (random < 95) {
                 move = FULL_MOON;
             } else {
@@ -748,7 +748,7 @@ uint8_t choose_move(uint8_t old_move_nb){
 /**
 * @brief Initializes the choreography
 */
-void choreography_init(){
+void choreography_init(void){
     motors_init();
 	detection_init();
 	signals_processing_init();
@@ -756,7 +756,6 @@ void choreography_init(){
     chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
-    return 0;
 }
 
 /**
@@ -775,7 +774,7 @@ void do_nothing(uint16_t time_ms){
 /**
 * @brief Try to escape the nearest obstacle
 */
-void escape_obstacle(){
+void escape_obstacle(void){
 	uint16_t motor_speed = choose_motor_speed();
     update_obstacle_array(obstacle);;
     if (obstacle[0] == true){
@@ -841,7 +840,7 @@ void escape_obstacle(){
 /**
 * @brief DO a full rotation of the epuck
 */
-void full_rotation(){
+void full_rotation(void){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK;
     motor_pos_args.position_l = PERIMETER_EPUCK;
@@ -909,7 +908,7 @@ void move(uint8_t move_chosen){
 * @param time_ms Time in milliseconds to move backward
 * @param speed Speed chosen to move
 */
-void move_backward(){
+void move_backward(void){
     uint16_t motor_speed = choose_motor_speed();
 	motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = -motor_speed;
@@ -921,7 +920,7 @@ void move_backward(){
 /**
 * @brief Make the robot do a cross
 */
-void move_cross(){
+void move_cross(void){
 	move_forward();
     if (is_escaping == false){
         move_backward();
@@ -946,7 +945,7 @@ void move_cross(){
 * @param time_ms Time in milliseconds to move forward
 * @param speed Speed chosen to move
 */
-void move_forward(){
+void move_forward(void){
     uint16_t motor_speed = choose_motor_speed();
 	motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = motor_speed;
@@ -958,12 +957,12 @@ void move_forward(){
 /**
 * @brief Make the robot do a circle
 */
-void move_full_moon(){
+void move_full_moon(void){
     uint16_t motor_speed = choose_motor_speed();
-    motor_pos_args.position_r = PERIMETER_EPUCK * 4;
-    motor_pos_args.position_l = PERIMETER_EPUCK * 2;
-	motor_pos_args.speed_left = motor_speed / 2;
-	motor_pos_args.speed_right = motor_speed;
+    motor_pos_args.position_r = PERIMETER_EPUCK;
+    motor_pos_args.position_l = PERIMETER_EPUCK/2;
+	motor_pos_args.speed_left = motor_speed;
+	motor_pos_args.speed_right = motor_speed*2;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     chThdWait(pointer_thread_motor_pos);
 }
@@ -971,12 +970,12 @@ void move_full_moon(){
 /**
 * @brief Make the robot do a U turn.
 */
-void move_half_moon(){
+void move_half_moon(void){
     uint16_t motor_speed = choose_motor_speed();
-    motor_pos_args.position_r = PERIMETER_EPUCK * 2;
-    motor_pos_args.position_l = PERIMETER_EPUCK;
-	motor_pos_args.speed_left = motor_speed / 2;
-	motor_pos_args.speed_right = motor_speed;
+    motor_pos_args.position_r = PERIMETER_EPUCK/2;
+    motor_pos_args.position_l = PERIMETER_EPUCK/4;
+	motor_pos_args.speed_left = motor_speed;
+	motor_pos_args.speed_right = motor_speed*2;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     chThdWait(pointer_thread_motor_pos);
 }
@@ -984,7 +983,7 @@ void move_half_moon(){
 /**
 * @brief Start RGB leds blinking
 */
-void start_leds(){
+void start_leds(void){
     rgb initial_rgb = {0, 0 ,0};
     blink_LED2(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
     blink_LED4(1, DEFAULT_BLINK_DELAY_ON, DEFAULT_BLINK_DELAY_OFF, initial_rgb, FOLLOW_PITCH);
@@ -1000,7 +999,7 @@ void start_leds(){
 /**
 * @brief Make the epuck turn around
 */
-void turn_around(){
+void turn_around(void){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/2;
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
@@ -1013,7 +1012,7 @@ void turn_around(){
 /**
 * @brief Make the robot turn left
 */
-void turn_left(){
+void turn_left(void){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
     motor_pos_args.position_l = PERIMETER_EPUCK/4;
@@ -1026,7 +1025,7 @@ void turn_left(){
 /**
 * @brief Make the robot turn right
 */
-void turn_right(){
+void turn_right(void){
     uint16_t motor_speed = choose_motor_speed();
     motor_pos_args.position_r = PERIMETER_EPUCK/4;
     motor_pos_args.position_l = PERIMETER_EPUCK/4;

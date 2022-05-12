@@ -2,7 +2,7 @@
 #define SIGNALS_PROCESSING_H
 
 #define CHUNK_SIZE 	1024
-#define WINDOW_SIZE 64
+#define WINDOW_SIZE 32
 
 //#define DATA_TO_COMPUTER
 //#define DATA_TO_COMPUTER3

@@ -48,7 +48,7 @@ static THD_FUNCTION(ThdDetection, arg) {
 * @brief Compute distance in mm from the obstacle if between threshlod. The threshold is used to remove unwanted data. Formula is given here : 
 *        1/prox = p1*distance - p2; distance = (1/prox+p2)/p1;
 */
-void compute_distance(){
+void compute_distance(void){
     for (uint8_t i = 0; i < LED_IR_nb; i++){
         obstacle_dist[i] = 255;
         if ((prox[i] > THRESHOLD_PROX_MIN) && (prox[i] < THRESHOLD_PROX_MAX)) {
@@ -82,12 +82,11 @@ void debug_detection(uint8_t level){
 /**
 * @brief Initializes IR detection and calibrates it
 */
-void detection_init(){
+void detection_init(void){
     proximity_start();
     chThdCreateStatic(waThdDetection, sizeof(waThdDetection), NORMALPRIO, ThdDetection, NULL);
     unsigned int rand_seed = get_prox(0)*get_prox(1)*get_prox(2)*get_prox(3)*get_prox(4)*get_prox(5)*get_prox(6)*get_prox(7);
     srand(rand_seed); 
-    return 0;
 }
 
 /**
@@ -95,7 +94,7 @@ void detection_init(){
 *
 * @return Bool true if obstacle
 */
-bool is_obstacle(){
+bool is_obstacle(void){
     for (uint8_t i = 0; i < LED_IR_nb; i++){
         if (obstacle_dist[i] < THRESHOLD_DIST) {
             return true;
@@ -124,7 +123,7 @@ void update_obstacle_array(bool *obstacle){
 *
 * @return The index of the nearest obstacle
 */
-uint8_t find_min_obstacle_distance_index(){
+uint8_t find_min_obstacle_distance_index(void){
     uint8_t min_index = 0;
     uint16_t min = obstacle_dist[0];
     for (uint8_t i = 1; i < LED_IR_nb; i++){
