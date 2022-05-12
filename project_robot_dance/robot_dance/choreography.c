@@ -166,8 +166,8 @@ void update_RGB_delay(uint16_t *delay_on, uint16_t *delay_off);
 
 static THD_WORKING_AREA(waThdDance, 1024);
 static THD_WORKING_AREA(waThdEscape, 2048);
-static THD_WORKING_AREA(waThdMotor, 1024);
-static THD_WORKING_AREA(waThdMotorPos, 1024);
+static THD_WORKING_AREA(waThdMotor, 2048);
+static THD_WORKING_AREA(waThdMotorPos, 2048);
 static THD_WORKING_AREA(waThdLedLED1, 256);
 static THD_WORKING_AREA(waThdLedLED2, 256);
 static THD_WORKING_AREA(waThdLedLED3, 256);
@@ -295,12 +295,14 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
     static thd_motor_pos_counters counters;
+	right_motor_set_pos(0);
+	left_motor_set_pos(0);
     counters.counter_step_right = 0;    
     counters.counter_step_left = 0; 
     counters.position_to_reach_right = 0;
     counters.position_to_reach_left = 0;
-    counters.position_right_reached = 0;
-    counters.position_left_reached = 0;
+    counters.position_right_reached = false;
+    counters.position_left_reached = false;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
     while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
     	if(chThdShouldTerminateX()){
@@ -313,7 +315,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
 					right_motor_set_speed(0);
 				}
 			}
-			if (counters.position_left_reached == 0){
+			if (counters.position_left_reached == false){
 				counters.counter_step_left = left_motor_get_pos();
 				if (abs(counters.counter_step_left) >= abs(counters.position_to_reach_left)){
 					counters.position_left_reached = 1;
@@ -771,7 +773,7 @@ int choreography_init(){
 	detection_init();
 	signals_processing_init();
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
-    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
+    //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -871,12 +873,6 @@ void full_rotation(){
 * @param speed_left Speed of the left motor
 */
 void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters){
-	right_motor_set_pos(0);
-	left_motor_set_pos(0);
-	counters->counter_step_left = 0;
-	counters->counter_step_right = 0;
-    counters->position_right_reached = 0;
-    counters->position_left_reached = 0;
 	counters->position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
 	counters->position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
     right_motor_set_speed(speed_right);
@@ -903,14 +899,20 @@ void move(int move_chosen){
         break;
     case TURN_AROUND:
         turn_around();
+    	move_done = true;
         break;
     case DO_NOTHING:
-        do_nothing(DEFAULT_MOVE_TIME_MS);
+        //do_nothing(DEFAULT_MOVE_TIME_MS);
+    	move_done = true;
         break;
     case HALF_MOON:
-        move_half_moon();
+        //move_half_moon();
+    	move_done = true;
+		  break;
     case FULL_MOON:
-        move_full_moon(); 
+        //move_full_moon();
+    	move_done = true;
+        break;
     default:
         break;
     }

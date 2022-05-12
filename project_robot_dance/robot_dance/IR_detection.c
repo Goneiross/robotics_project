@@ -14,9 +14,9 @@
 #define DEBUG_LEVEL 3
 #define LED_IR_nb 8
 
-#define THRESHOLD_PROX_MIN 100 // MODIFIER CA !!!
+#define THRESHOLD_PROX_MIN 85 // MODIFIER CA !!!
 #define THRESHOLD_PROX_MAX 10000 // MODIFIER CA !!!
-#define THRESHOLD_DIST 40
+#define THRESHOLD_DIST 55
 
 #define P1 0.0002401
 #define P1_INV 4165
@@ -33,7 +33,7 @@ static THD_WORKING_AREA(waThdDetection, 1024);
 static THD_FUNCTION(ThdDetection, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
-    calibrate_ir();
+   // calibrate_ir();
     while(1){
         for (int i = 0; i < LED_IR_nb; i++){
           prox[i] = get_prox(i);
