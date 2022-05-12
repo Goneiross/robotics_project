@@ -128,6 +128,15 @@ typedef struct thd_motor_pos_args {
     int16_t speed_left;
 } thd_motor_pos_args;
 
+typedef struct thd_motor_pos_counters {
+    int32_t counter_step_right;          // in [step]
+    int32_t counter_step_left; 		    // in [step]
+    int32_t position_to_reach_right;	    // in [step]
+    int32_t position_to_reach_left;	    // in [step]
+    bool position_right_reached;
+    bool position_left_reached;
+} thd_motor_pos_counters;
+
 void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
 void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
@@ -145,7 +154,7 @@ int choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left);
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters);
 void move(int move_chosen);
 void move_backward(uint16_t time_ms, int16_t speed);
 void move_forward(uint16_t time_ms, int16_t speed);
@@ -174,12 +183,6 @@ static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
 static bool move_done = true;
 
-static int32_t counter_step_right = 0;          // in [step]
-static int32_t counter_step_left = 0; 		    // in [step]
-static int32_t position_to_reach_right = 0;	    // in [step]
-static int32_t position_to_reach_left = 0;	    // in [step]
-static bool position_right_reached = 0;
-static bool position_left_reached = 0;
 static thd_motor_pos_args motor_pos_args;
 
 static thread_t* pointer_thread_motor_pos = NULL;
@@ -291,22 +294,29 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
     thd_motor_pos_args *motor_pos_info = arg;
-    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left);
-    while ((position_right_reached == false) || (position_left_reached == false)){
+    static thd_motor_pos_counters counters;
+    counters.counter_step_right = 0;    
+    counters.counter_step_left = 0; 
+    counters.position_to_reach_right = 0;
+    counters.position_to_reach_left = 0;
+    counters.position_right_reached = 0;
+    counters.position_left_reached = 0;
+    motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
+    while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
-			if (position_right_reached == false){
-				counter_step_right = right_motor_get_pos();
-				if (abs(counter_step_right) >= abs(position_to_reach_right)){
-					position_right_reached = 1;
+			if (counters.position_right_reached == false){
+				counters.counter_step_right = right_motor_get_pos();
+				if (abs(counters.counter_step_right) >= abs(counters.position_to_reach_right)){
+					counters.position_right_reached = 1;
 					right_motor_set_speed(0);
 				}
 			}
-			if (position_left_reached == 0){
-				counter_step_left = left_motor_get_pos();
-				if (abs(counter_step_left) >= abs(position_to_reach_left)){
-					position_left_reached = 1;
+			if (counters.position_left_reached == 0){
+				counters.counter_step_left = left_motor_get_pos();
+				if (abs(counters.counter_step_left) >= abs(counters.position_to_reach_left)){
+					counters.position_left_reached = 1;
 					left_motor_set_speed(0);
 				}
 			}
@@ -859,15 +869,15 @@ void full_rotation(){
 * @param speed_right Speed of the right motor
 * @param speed_left Speed of the left motor
 */
-void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left){
+void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters){
 	right_motor_set_pos(0);
 	left_motor_set_pos(0);
-	counter_step_left = 0;
-	counter_step_right = 0;
-    position_right_reached = 0;
-    position_left_reached = 0;
-	position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
-	position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->counter_step_left = 0;
+	counters->counter_step_right = 0;
+    counters->position_right_reached = 0;
+    counters->position_left_reached = 0;
+	counters->position_to_reach_left = position_l * NSTEP_ONE_TURN / WHEEL_PERIMETER;
+	counters->position_to_reach_right = position_r * NSTEP_ONE_TURN / WHEEL_PERIMETER;
     right_motor_set_speed(speed_right);
     left_motor_set_speed(speed_left);
 }
