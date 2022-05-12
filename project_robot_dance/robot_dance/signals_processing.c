@@ -14,7 +14,7 @@
 #define HIGH_FILTER_PITCH_I 256
 #define LOW_FILTER_CORR_I 4
 #define HIGH_FILTER_CORR_I 46
-#define AUDIO_PROCESS_TIME 69
+#define AUDIO_PROCESS_TIME 71
 #define MINUTE_IN_MS 60000
 #define ONSET_NB_SEND 4
 #define ONSET_COEF 1
@@ -319,7 +319,7 @@ uint16_t find_maximum_index(float* array_buffer, uint16_t min_range, uint16_t ma
 */
 uint8_t get_music_tempo(void){
 	uint16_t interval = get_music_interval();
-	uint8_t tempo = (uint8_t)((float)MINUTE_IN_MS/(float)interval);
+	uint8_t tempo = MINUTE_IN_MS/interval;
 	return tempo;
 }
 
