@@ -205,11 +205,11 @@ static THD_FUNCTION(ThdDance, arg) {
             	old_move_nb = move_nb;
             }
             move_nb = choose_move(old_move_nb);
-            // chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
+            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
             move_done = false;
             move(move_nb);
     	}
-        chThdSleepMilliseconds(10);
+        chThdSleepMilliseconds(20);
     }
 }
 
@@ -304,27 +304,30 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     counters.position_right_reached = false;
     counters.position_left_reached = false;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
+    chprintf((BaseSequentialStream *)&SD3, "avant le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
+    	chprintf((BaseSequentialStream *)&SD3, "dans le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
 			if (counters.position_right_reached == false){
 				counters.counter_step_right = right_motor_get_pos();
 				if (abs(counters.counter_step_right) >= abs(counters.position_to_reach_right)){
-					counters.position_right_reached = 1;
+					counters.position_right_reached = true;
 					right_motor_set_speed(0);
 				}
 			}
 			if (counters.position_left_reached == false){
 				counters.counter_step_left = left_motor_get_pos();
 				if (abs(counters.counter_step_left) >= abs(counters.position_to_reach_left)){
-					counters.position_left_reached = 1;
+					counters.position_left_reached = true;
 					left_motor_set_speed(0);
 				}
 			}
     	}
         chThdSleepMilliseconds(20);
     }
+    chprintf((BaseSequentialStream *)&SD3, "après le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     move_done = true;
     chThdExit(0);
 }
@@ -772,7 +775,7 @@ int choreography_init(){
     motors_init();
 	detection_init();
 	signals_processing_init();
-    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO, ThdDance, NULL);
+    chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO+1, ThdDance, NULL);
     //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
@@ -862,6 +865,8 @@ void full_rotation(){
 	motor_pos_args.speed_left = -motor_speed;
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+	chThdWait(pointer_thread_motor_pos);
+	//chThdRelease(pointer_thread_motor_pos);
 }
 
 /**
@@ -987,7 +992,11 @@ void turn_around(){
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
 	motor_pos_args.speed_left = -motor_speed;
 	motor_pos_args.speed_right = motor_speed;
+	chprintf((BaseSequentialStream *)&SD3, "bonjour\n");
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+	chThdWait(pointer_thread_motor_pos);
+	//chThdRelease(pointer_thread_motor_pos);
+	chprintf((BaseSequentialStream *)&SD3, "aurevoir\n");
 }
 
 /**
