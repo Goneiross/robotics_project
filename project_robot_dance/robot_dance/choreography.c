@@ -18,6 +18,7 @@
 #include "IR_detection.h"
 #include "signals_processing.h"
 
+#define MOVE_NB 4
 #define BODY_BLINK_DELAY 200
 #define DEFAULT_BLINK_DELAY_ON 50
 #define DEFAULT_BLINK_DELAY_OFF 50

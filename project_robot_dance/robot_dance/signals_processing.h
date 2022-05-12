@@ -20,16 +20,15 @@ float* get_auto_correlation(void);
 void wait_send_to_computer(void);
 #endif
 
-uint16_t get_music_amplitude(void);
-uint16_t get_music_interval(void);
-uint16_t get_music_pitch(void);
-uint8_t get_music_tempo(void);
-void processAudioData(int16_t *data, uint16_t num_samples);
-void reset_tempo_update(void);
 void signals_processing_init(void);
-bool state_tempo_update(void);
+void processAudioData(int16_t *data, uint16_t num_samples);
 void wait_onset(void);
-void wait_big_onset(void);
+uint8_t get_music_tempo(void);
+uint16_t get_music_pitch(void);
+uint16_t get_music_interval(void);
+uint16_t get_music_amplitude(void);
 void wait_tempo_update(void);
+bool state_tempo_update(void);
+void reset_tempo_update(void);
 
 #endif
