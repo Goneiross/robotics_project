@@ -327,7 +327,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     	}
         chThdSleepMilliseconds(20);
     }
-    chprintf((BaseSequentialStream *)&SD3, "après le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
+    chprintf((BaseSequentialStream *)&SD3, "aprï¿½s le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     move_done = true;
     chThdExit(0);
 }
@@ -792,6 +792,7 @@ void do_nothing(uint16_t time_ms){
 	motor_args.speed_left = 0;
 	motor_args.speed_right = 0;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdWait(pointer_thread_motor);
 }
 
 /**
@@ -807,48 +808,56 @@ void escape_obstacle(){
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[1] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[2] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[3] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_right = motor_speed;
         motor_pos_args.speed_left = -motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[4] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/16;
         motor_pos_args.position_l = PERIMETER_EPUCK/16;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[5] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4;
         motor_pos_args.position_l = PERIMETER_EPUCK/4;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[6] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else if (obstacle[7] == true){
         motor_pos_args.position_r = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.position_l = PERIMETER_EPUCK/4 + PERIMETER_EPUCK/8 + PERIMETER_EPUCK/32;
         motor_pos_args.speed_right = -motor_speed;
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+        chThdWait(pointer_thread_motor);
     } else {
     	// chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
@@ -934,6 +943,7 @@ void move_backward(uint16_t time_ms, int16_t speed){
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdWait(pointer_thread_motor);
 }
 
 /**
@@ -947,6 +957,7 @@ void move_forward(uint16_t time_ms, int16_t speed){
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
+    chThdWait(pointer_thread_motor);
 }
 
 void move_full_moon(){
@@ -956,6 +967,7 @@ void move_full_moon(){
 	motor_pos_args.speed_left = motor_speed / 2;
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    chThdWait(pointer_thread_motor_pos);
 }
 
 void move_half_moon(){
@@ -965,6 +977,7 @@ void move_half_moon(){
 	motor_pos_args.speed_left = motor_speed / 2;
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
+    chThdWait(pointer_thread_motor_pos);
 }
 
 /**
@@ -992,11 +1005,8 @@ void turn_around(){
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
 	motor_pos_args.speed_left = -motor_speed;
 	motor_pos_args.speed_right = motor_speed;
-	chprintf((BaseSequentialStream *)&SD3, "bonjour\n");
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 	chThdWait(pointer_thread_motor_pos);
-	//chThdRelease(pointer_thread_motor_pos);
-	chprintf((BaseSequentialStream *)&SD3, "aurevoir\n");
 }
 
 /**
