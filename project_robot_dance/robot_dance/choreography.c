@@ -227,7 +227,6 @@ static THD_FUNCTION(ThdEscape, arg) {
             move_done = false;
             cancel_moves();
             chThdSleepMilliseconds(50);
-            // chprintf((BaseSequentialStream *)&SD3, "in the if of escape\n");
             do {
                 escape_obstacle();
                 while (move_done == false) {
@@ -387,7 +386,6 @@ static THD_FUNCTION(ThdRGBLed, arg) {
 				reset_tempo_update();
         	}
             update_RGB_delay(&delay_on, &delay_off);
-            //chprintf((BaseSequentialStream *)&SD3, " delayoff: %d ms: %d\n", delay_off, get_music_interval());
             chThdSleepMilliseconds(delay_off);
             choose_and_set_RGB(&led);
             chThdSleepMilliseconds(delay_on);
@@ -590,12 +588,10 @@ void cancel_moves(){
     if (pointer_thread_motor_pos != NULL){
 		chThdTerminate(pointer_thread_motor_pos);
 		pointer_thread_motor_pos = NULL;
-		// chprintf((BaseSequentialStream *)&SD3, "terminate_pose \n");
 	}
 	if (pointer_thread_motor != NULL){
 		chThdTerminate(pointer_thread_motor);
 		pointer_thread_motor = NULL;
-		// chprintf((BaseSequentialStream *)&SD3, "ex-terminate \n");
 	}
 }
 
@@ -632,7 +628,6 @@ void choose_and_set_RGB(rgb_led_name_t *led_number){
 			g=0;
 			b=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 6 * 255;
 		}
-		//chprintf((BaseSequentialStream *)&SD3, " r:%d, g: %d, b: %d\n", r, g, b);
 		set_rgb_led(*led_number, r, g , b);
 	}
 }
@@ -776,7 +771,7 @@ int choreography_init(){
 	detection_init();
 	signals_processing_init();
     chThdCreateStatic(waThdDance, sizeof(waThdDance), NORMALPRIO+1, ThdDance, NULL);
-    //chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
+    chThdCreateStatic(waThdEscape, sizeof(waThdEscape), NORMALPRIO+2, ThdEscape, NULL);
     spi_comm_start();
     start_leds();
     return 0;
@@ -859,7 +854,6 @@ void escape_obstacle(){
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         chThdWait(pointer_thread_motor);
     } else {
-    	// chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
     }
 }
@@ -875,7 +869,6 @@ void full_rotation(){
 	motor_pos_args.speed_right = motor_speed;
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 	chThdWait(pointer_thread_motor_pos);
-	//chThdRelease(pointer_thread_motor_pos);
 }
 
 /**
@@ -916,15 +909,15 @@ void move(int move_chosen){
     	move_done = true;
         break;
     case DO_NOTHING:
-        //do_nothing(DEFAULT_MOVE_TIME_MS);
+        do_nothing(DEFAULT_MOVE_TIME_MS);
     	move_done = true;
         break;
     case HALF_MOON:
-        //move_half_moon();
+        move_half_moon();
     	move_done = true;
 		  break;
     case FULL_MOON:
-        //move_full_moon();
+        move_full_moon();
     	move_done = true;
         break;
     default:
