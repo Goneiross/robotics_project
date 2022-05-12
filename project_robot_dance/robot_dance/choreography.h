@@ -3,6 +3,6 @@
 
 #include <hal.h>
 
-int choreography_init(void);
+void choreography_init(void);
 
 #endif
