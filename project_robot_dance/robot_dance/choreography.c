@@ -205,7 +205,7 @@ static THD_FUNCTION(ThdDance, arg) {
             	old_move_nb = move_nb;
             }
             move_nb = choose_move(old_move_nb);
-            chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
+            //chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
             move_done = false;
             move(move_nb);
     	}
@@ -304,9 +304,9 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     counters.position_right_reached = false;
     counters.position_left_reached = false;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
-    chprintf((BaseSequentialStream *)&SD3, "avant le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
+    //chprintf((BaseSequentialStream *)&SD3, "avant le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
-    	chprintf((BaseSequentialStream *)&SD3, "dans le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
+    	//chprintf((BaseSequentialStream *)&SD3, "dans le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
@@ -327,7 +327,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     	}
         chThdSleepMilliseconds(20);
     }
-    chprintf((BaseSequentialStream *)&SD3, "après le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
+    //chprintf((BaseSequentialStream *)&SD3, "après le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     move_done = true;
     chThdExit(0);
 }
@@ -850,7 +850,7 @@ void escape_obstacle(){
         motor_pos_args.speed_left = motor_speed;
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
     } else {
-    	// chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
+    	chprintf((BaseSequentialStream *)&SD3, "erreur no obstacle\n");
     	move_done = true;
     }
 }
@@ -992,11 +992,11 @@ void turn_around(){
     motor_pos_args.position_l = PERIMETER_EPUCK/2;
 	motor_pos_args.speed_left = -motor_speed;
 	motor_pos_args.speed_right = motor_speed;
-	chprintf((BaseSequentialStream *)&SD3, "bonjour\n");
+	//chprintf((BaseSequentialStream *)&SD3, "bonjour\n");
 	pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
 	chThdWait(pointer_thread_motor_pos);
 	//chThdRelease(pointer_thread_motor_pos);
-	chprintf((BaseSequentialStream *)&SD3, "aurevoir\n");
+	//chprintf((BaseSequentialStream *)&SD3, "aurevoir\n");
 }
 
 /**

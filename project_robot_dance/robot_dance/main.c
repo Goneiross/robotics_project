@@ -16,8 +16,8 @@
 
 #define CHUNK_SIZE 	1024
 #define WINDOW_SIZE 64
-//#define DATA_TO_COMPUTER
-//#define DATA_TO_COMPUTER2
+#define DATA_TO_COMPUTER
+#define DATA_TO_COMPUTER3
 
 messagebus_t bus;
 MUTEX_DECL(bus_lock);

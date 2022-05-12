@@ -136,11 +136,18 @@ void auto_corr_freq(uint8_t *rms_frequencies_i, float *mean_rms_derivative_fft){
 		arm_abs_f32(rms_frequencies_w, rms_frequencies_w, WINDOW_SIZE);
 		arm_rms_f32(rms_frequencies_w,WINDOW_SIZE,mean_rms_derivative_fft);
 		for(uint8_t i=0; i < WINDOW_SIZE; i++){
-			rms_frequencies_w[i] = rms_frequencies_w[i]-(*mean_rms_derivative_fft);
+			if(rms_frequencies_w[i] >= (*mean_rms_derivative_fft)){
+				rms_frequencies_w[i] = rms_frequencies_w[i]-(*mean_rms_derivative_fft);
+			} else {
+				rms_frequencies_w[i] = 0;
+			}
 		}
 		arm_correlate_f32(rms_frequencies_w, WINDOW_SIZE, rms_frequencies_w, WINDOW_SIZE, auto_correlation);
 		chBSemReset(&tempo_update_sem,true);
 		#ifdef DATA_TO_COMPUTER2
+		chBSemSignal(&sendToComputer_sem);
+		#endif
+		#ifdef DATA_TO_COMPUTER3
 		chBSemSignal(&sendToComputer_sem);
 		#endif
 	}
