@@ -14,6 +14,11 @@
 
 #include "choreography.h"
 
+#define CHUNK_SIZE 	1024
+#define WINDOW_SIZE 64
+//#define DATA_TO_COMPUTER
+//#define DATA_TO_COMPUTER2
+
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
@@ -26,6 +31,8 @@ static float send_rms[WINDOW_SIZE];
 #ifdef DATA_TO_COMPUTER3
 static float send_cor[2*WINDOW_SIZE];
 #endif
+
+
 
 static void serial_start(void)
 {

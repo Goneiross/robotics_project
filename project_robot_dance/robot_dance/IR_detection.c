@@ -11,16 +11,16 @@
 #include "choreography.h"
 #include "IR_detection.h"
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 3
 #define LED_IR_nb 8
 
 #define THRESHOLD_PROX_MIN 100 // MODIFIER CA !!!
 #define THRESHOLD_PROX_MAX 10000 // MODIFIER CA !!!
 #define THRESHOLD_DIST 40
 
-#define P1 0.00017303
-#define P1_INV 5779
-#define P2 0.00054629
+#define P1 0.0002401
+#define P1_INV 4165
+#define P2 -0.0001439
 
 static int16_t prox[8] = {0};
 static uint16_t obstacle_dist[8] = {0};
@@ -46,7 +46,7 @@ static THD_FUNCTION(ThdDetection, arg) {
 
 /**
 * @brief Compute distance in mm from the obstacle if between threshlod. The threshold is used to remove unwanted data. Formula is given here : 
-*        1/prox = p1*distance - p2; distance = (1/prox+p2)/p1; p1 = 0.00017303; p2 = 0.00054629;
+*        1/prox = p1*distance - p2; distance = (1/prox+p2)/p1;
 */
 void compute_distance(){
     for (int i = 0; i < LED_IR_nb; i++){
@@ -70,7 +70,7 @@ void debug_detection(int level){
     }
     if (level >= 3){
         for (int i = 0; i < LED_IR_nb; i++){
-        	if(obstacle_dist[i]<255){
+        	if(obstacle_dist[i]<50){
         		chprintf((BaseSequentialStream *)&SD3, "Prox%d=%d Dist%d=%d ", i, prox[i],i ,obstacle_dist[i]);
         	}
         }
