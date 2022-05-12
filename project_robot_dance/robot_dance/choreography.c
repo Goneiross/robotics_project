@@ -157,9 +157,9 @@ void escape_obstacle(void);
 void full_rotation(void);
 void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters);
 void move(int move_chosen);
-void move_backward(uint16_t time_ms, int16_t speed);
+void move_backward(int16_t speed);
 void move_cross(uint16_t time_ms, int16_t speed);
-void move_forward(uint16_t time_ms, int16_t speed);
+void move_forward(int16_t speed);
 void move_full_moon(void);
 void move_half_moon(void);
 void start_leds(void);
@@ -914,7 +914,7 @@ void move(int move_chosen){
 * @param time_ms Time in milliseconds to move backward
 * @param speed Speed chosen to move
 */
-void move_backward(uint16_t time_ms, int16_t speed){
+void move_backward(int16_t speed){
 	motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
