@@ -139,24 +139,24 @@ typedef struct thd_motor_pos_counters {
 } thd_motor_pos_counters;
 
 void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type);
 void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type);
 void blink_LED5(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type);
 void blink_LED7(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
-void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type);
+void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type);
 void blink_LED_BODY(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void blink_LED_FRONT(uint8_t iterations, uint16_t delay_on, uint16_t delay_off);
 void cancel_moves(void);
 void choose_and_set_RGB(rgb_led_name_t *led_number);
 uint16_t choose_motor_speed(void);
-int choose_move(uint8_t old_move_nb);
+uint8_t choose_move(uint8_t old_move_nb);
 void do_nothing(uint16_t time_ms);
 void escape_obstacle(void);
 void full_rotation(void);
 void motor_set_position(float position_r, float position_l, int16_t speed_right, int16_t speed_left, thd_motor_pos_counters* counters);
-void move(int move_chosen);
+void move(uint8_t move_chosen);
 void move_backward(void);
 void move_cross(void);
 void move_forward(void);
@@ -342,7 +342,7 @@ static THD_FUNCTION(ThdLed, arg) {
     		wait_onset();
     	}
     	palWritePad(gpio, led, !on);
-		for (int i = 0; i < iterations; i ++){
+		for (uint8_t i = 0; i < iterations; i ++){
 			palWritePad(gpio, led, on);
 			chThdSleepMilliseconds(delay_on);
 			palWritePad(gpio, led, !on);
@@ -378,7 +378,7 @@ static THD_FUNCTION(ThdRGBLed, arg) {
         }
     } else {
         set_rgb_led(led, 0, 0 , 0);
-        for (int i = 0; i < iterations; i++) {
+        for (uint8_t i = 0; i < iterations; i++) {
             chThdSleepMilliseconds(delay_off);
             choose_and_set_RGB(&led);
             chThdSleepMilliseconds(delay_on);
@@ -414,7 +414,7 @@ void blink_LED1(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED2(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED2;
     rgb_led_args.iterations = iterations;
@@ -450,7 +450,7 @@ void blink_LED3(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED4(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED4;
     rgb_led_args.iterations = iterations;
@@ -486,7 +486,7 @@ void blink_LED5(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED6(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED6;
     rgb_led_args.iterations = iterations;
@@ -522,7 +522,7 @@ void blink_LED7(uint8_t iterations, uint16_t delay_on, uint16_t delay_off){
 * @param colour RGB colour for the LED
 * @param play_type Way to use the LED (FOLLOW_PITCH, MANUAL)
 */
-void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, int play_type){
+void blink_LED8(uint8_t iterations, uint16_t delay_on, uint16_t delay_off, rgb colour, uint8_t play_type){
     static thd_rgb_led_args rgb_led_args;
     rgb_led_args.led = LED8;
     rgb_led_args.iterations = iterations;
@@ -639,7 +639,7 @@ uint16_t choose_motor_speed(){
 *
 * @return the value of the move
 */
-int choose_move(uint8_t old_move_nb){
+uint8_t choose_move(uint8_t old_move_nb){
         uint8_t tempo = get_music_tempo();
         uint8_t move = 0;
         uint8_t random = 1 + rand() % 99;
@@ -747,10 +747,8 @@ int choose_move(uint8_t old_move_nb){
 
 /**
 * @brief Initializes the choreography
-*
-* @return 0 if no error
 */
-int choreography_init(){
+void choreography_init(){
     motors_init();
 	detection_init();
 	signals_processing_init();
@@ -873,7 +871,7 @@ void motor_set_position(float position_r, float position_l, int16_t speed_right,
 *
 * @param move_chosen the ID of the move to execute
 */
-void move(int move_chosen){
+void move(uint8_t move_chosen){
     switch (move_chosen)
     {
     case MOVE_FORWARD:
