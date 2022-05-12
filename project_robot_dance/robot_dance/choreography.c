@@ -229,15 +229,9 @@ static THD_FUNCTION(ThdEscape, arg) {
             chThdSleepMilliseconds(50);
             do {
                 escape_obstacle();
-                while (move_done == false) {
-                    chThdSleepMilliseconds(10);
-                }
                 motor_speed = choose_motor_speed();
                 move_done = false;
                 move_forward(DEFAULT_MOVE_ESCAPE_TIME_MS, motor_speed);
-                while (move_done == false) {
-                	chThdSleepMilliseconds(10);
-                }
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
@@ -303,9 +297,7 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     counters.position_right_reached = false;
     counters.position_left_reached = false;
     motor_set_position(motor_pos_info->position_r, motor_pos_info->position_l, motor_pos_info->speed_right, motor_pos_info->speed_left, &counters);
-    chprintf((BaseSequentialStream *)&SD3, "avant le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     while ((counters.position_right_reached == false) || (counters.position_left_reached == false)){
-    	chprintf((BaseSequentialStream *)&SD3, "dans le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     	if(chThdShouldTerminateX()){
     		chThdExit(0);
     	} else {
@@ -326,7 +318,6 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     	}
         chThdSleepMilliseconds(20);
     }
-    chprintf((BaseSequentialStream *)&SD3, "apr�s le while, counterstepleft %d, position_to_reach_left %d, position_left_reached  %d \n", counters.counter_step_left ,counters.position_to_reach_left,counters.position_left_reached );
     move_done = true;
     chThdExit(0);
 }
