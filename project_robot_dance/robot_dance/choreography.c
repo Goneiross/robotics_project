@@ -915,7 +915,7 @@ void move(int move_chosen){
 * @param speed Speed chosen to move
 */
 void move_backward(uint16_t time_ms, int16_t speed){
-	motor_args.time_ms = time_ms;
+	motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = -speed;
 	motor_args.speed_right = -speed;
 	pointer_thread_motor = chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
@@ -947,8 +947,8 @@ void move_cross(uint16_t time_ms, int16_t speed){
 * @param time_ms Time in milliseconds to move forward
 * @param speed Speed chosen to move
 */
-void move_forward(uint16_t time_ms, int16_t speed){
-	motor_args.time_ms = time_ms;
+void move_forward(int16_t speed){
+	motor_args.time_ms = get_music_interval();
 	motor_args.speed_left = speed;
 	motor_args.speed_right = speed;
 	pointer_thread_motor =chThdCreateStatic(waThdMotor, sizeof(waThdMotor), NORMALPRIO, ThdMotor, &motor_args);
