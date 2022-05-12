@@ -181,7 +181,6 @@ static THD_WORKING_AREA(waThdLedBODY_LED, 256);
 
 static bool obstacle[8] = {false};
 static thd_motor_args motor_args;
-static bool move_done = true;
 
 static thd_motor_pos_args motor_pos_args;
 
@@ -198,7 +197,7 @@ static THD_FUNCTION(ThdDance, arg) {
     static uint8_t move_nb = 0;
     static uint8_t old_move_nb = 0;
     while(1){
-    	if((move_done == true) && (is_escaping == false)){
+    	if((is_escaping == false)){
     		pointer_thread_motor_pos = NULL;
     		pointer_thread_motor = NULL;
             if ((move_nb == MOVE_BACKWARD) || (move_nb == MOVE_FORWARD)){
@@ -206,7 +205,6 @@ static THD_FUNCTION(ThdDance, arg) {
             }
             move_nb = choose_move(old_move_nb);
             chprintf((BaseSequentialStream *)&SD3, "move nb: %d\n", move_nb);
-            move_done = false;
             move(move_nb);
     	}
         chThdSleepMilliseconds(20);
@@ -224,18 +222,15 @@ static THD_FUNCTION(ThdEscape, arg) {
     while (1) {
         if (is_obstacle() == true) {
             is_escaping = true;
-            move_done = false;
             cancel_moves();
             chThdSleepMilliseconds(50);
             do {
                 escape_obstacle();
                 motor_speed = choose_motor_speed();
-                move_done = false;
                 move_forward(DEFAULT_MOVE_ESCAPE_TIME_MS, motor_speed);
                 pointer_thread_motor_pos = NULL;
                 pointer_thread_motor = NULL;
             } while (is_obstacle() == true);
-            move_done = true;
             is_escaping = false;
         }
         chThdSleepMilliseconds(20);
@@ -277,7 +272,6 @@ static THD_FUNCTION(ThdMotor, arg) {
 
     right_motor_set_speed(0);
     left_motor_set_speed(0);
-    move_done = true;
     chThdExit(0);
 }
 /**
@@ -318,7 +312,6 @@ static THD_FUNCTION(ThdMotorPos, arg) {
     	}
         chThdSleepMilliseconds(20);
     }
-    move_done = true;
     chThdExit(0);
 }
 
@@ -391,7 +384,6 @@ static THD_FUNCTION(ThdRGBLed, arg) {
             set_rgb_led(led, 0, 0 , 0);
         }
     }
-    move_done = true;
     chThdExit(0);
 }
 
@@ -785,7 +777,6 @@ void do_nothing(uint16_t time_ms){
 * @brief Try to escape the nearest obstacle
 */
 void escape_obstacle(){
-    move_done = false; // Nécéssaire ? 
 	uint16_t motor_speed = choose_motor_speed();
     update_obstacle_array(obstacle);;
     if (obstacle[0] == true){
@@ -845,7 +836,6 @@ void escape_obstacle(){
         pointer_thread_motor_pos = chThdCreateStatic(waThdMotorPos, sizeof(waThdMotorPos), NORMALPRIO, ThdMotorPos, &motor_pos_args);
         chThdWait(pointer_thread_motor_pos);
     } else {
-    	move_done = true;
     }
 }
 
@@ -897,19 +887,15 @@ void move(int move_chosen){
         break;
     case TURN_AROUND:
         turn_around();
-    	move_done = true;
         break;
     case DO_NOTHING:
         do_nothing(DEFAULT_MOVE_TIME_MS);
-    	move_done = true;
         break;
     case HALF_MOON:
         move_half_moon();
-    	move_done = true;
 		  break;
     case FULL_MOON:
         move_full_moon();
-    	move_done = true;
         break;
     default:
         break;
