@@ -21,6 +21,9 @@
 #define BIG_ONSET_COEF 3
 #define COMPRESSION_LOG_FACTOR 100
 #define COMPRESSION_SCALE 100
+#define MAX_INTERVAL 2000
+#define FREQUENCY_STEP_KHZ 15625
+#define KILO 1000
 
 #ifdef DATA_TO_COMPUTER
 #define TIME_TO_WAIT  10
@@ -280,8 +283,8 @@ uint16_t get_music_interval(void){
 	uint16_t min_range = LOW_FILTER_CORR_I+WINDOW_SIZE;
 	uint16_t max_range = HIGH_FILTER_CORR_I+WINDOW_SIZE;
 	uint16_t music_interval = AUDIO_PROCESS_TIME*(find_maximum_index(auto_correlation, min_range, max_range)-WINDOW_SIZE);
-	if(music_interval > 2000){
-		music_interval = 2000;
+	if(music_interval > MAX_INTERVAL){
+		music_interval = MAX_INTERVAL;
 	}
 	return music_interval;
 }
@@ -294,8 +297,8 @@ uint16_t get_music_interval(void){
 uint16_t get_music_pitch(void){
 	uint16_t min_range = LOW_FILTER_PITCH_I;
 	uint16_t max_range = HIGH_FILTER_PITCH_I;
-	uint32_t frequency = find_maximum_index(mic_fft, min_range, max_range) * 15625;
-	return (uint16_t)(frequency/1000);
+	uint32_t frequency = find_maximum_index(mic_fft, min_range, max_range) * FREQUENCY_STEP_KHZ;
+	return (uint16_t)(frequency/KILO);
 }
 
 /**

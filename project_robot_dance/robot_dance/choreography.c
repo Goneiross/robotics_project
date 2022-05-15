@@ -59,6 +59,9 @@
 #define POSITION_REACHED       	1
 
 #define COLOR_HZ_RANGE 1000
+#define RGB_MAX 255
+#define RGB_MIN 0
+#define RGB_DIVISION 6
 
 /**
 * @brief Structure définissant les différents move
@@ -591,30 +594,30 @@ void cancel_moves(void){
 void choose_and_set_RGB(rgb_led_name_t *led_number){
 	if(get_music_amplitude()>SOUND_AMP_MIN){
 		uint16_t pitch = get_music_pitch();
-		uint8_t r = 255;
-		uint8_t g = 255;
-		uint8_t b = 255;
-		if(pitch < COLOR_HZ_RANGE/6){
-			b =0;
-			g = (pitch * 6 * 255)/COLOR_HZ_RANGE;
-		} else if(pitch < 2 * COLOR_HZ_RANGE/6){
-			r=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 2 * 255;
-			b=0;
+		uint8_t r = RGB_MAX;
+		uint8_t g = RGB_MAX;
+		uint8_t b = RGB_MAX;
+		if(pitch < COLOR_HZ_RANGE/RGB_DIVISION){
+			b = RGB_MIN;
+			g = (pitch * RGB_DIVISION * RGB_MAX)/COLOR_HZ_RANGE;
+		} else if(pitch < 2 * COLOR_HZ_RANGE/RGB_DIVISION){
+			r=-(pitch * RGB_DIVISION * RGB_MAX)/COLOR_HZ_RANGE + 2 * RGB_MAX;
+			b=RGB_MIN;
 
-		} else if(pitch < 3 * COLOR_HZ_RANGE/6){
-			r = 0;
-			b = (pitch * 6 * 255)/COLOR_HZ_RANGE - 2 * 255;
-		} else if(pitch < 4 * COLOR_HZ_RANGE/6){
-			r=0;
-			g=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 4 * 255;
+		} else if(pitch < 3 * COLOR_HZ_RANGE/RGB_DIVISION){
+			r = RGB_MIN;
+			b = (pitch * RGB_DIVISION * RGB_MAX)/COLOR_HZ_RANGE - 2 * RGB_MAX;
+		} else if(pitch < 4 * COLOR_HZ_RANGE/RGB_DIVISION){
+			r=RGB_MIN;
+			g=-(pitch * RGB_DIVISION * RGB_MAX)/COLOR_HZ_RANGE + 4 * RGB_MAX;
 
-		} else if(pitch < 5*COLOR_HZ_RANGE/6){
-			r=(pitch * 6 * 255) / COLOR_HZ_RANGE - 4 * 255;
-			g=0;
+		} else if(pitch < 5*COLOR_HZ_RANGE/RGB_DIVISION){
+			r=(pitch * RGB_DIVISION * RGB_MAX) / COLOR_HZ_RANGE - 4 * RGB_MAX;
+			g=RGB_MIN;
 
 		} else if(pitch < COLOR_HZ_RANGE){
-			g=0;
-			b=-(pitch * 6 * 255)/COLOR_HZ_RANGE + 6 * 255;
+			g=RGB_MIN;
+			b=-(pitch * RGB_DIVISION * RGB_MAX)/COLOR_HZ_RANGE + RGB_DIVISION * RGB_MAX;
 		}
 		set_rgb_led(*led_number, r, g , b);
 	}
