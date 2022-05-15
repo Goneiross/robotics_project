@@ -42,6 +42,10 @@
 #define TEMPO_4 140
 #define TEMPO_5 160
 
+#define RAND_HIGH_CHANCES_THRESHOLD 70
+#define RAND_MEDIUM_CHANCES_THRESHOLD 90
+#define RAND_LOW_CHANCES_THRESHOLD 95
+
 #define TEMPO_SPEED_COEF 10
 
 #define NSTEP_ONE_TURN      1000 // number of step for 1 turn of the motor
@@ -644,11 +648,11 @@ uint8_t choose_move(uint8_t old_move_nb){
         uint8_t move = 0;
         uint8_t random = 1 + rand() % 99;
         if (tempo < TEMPO_0) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 move = HALF_MOON;
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = FULL_MOON;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
@@ -658,11 +662,11 @@ uint8_t choose_move(uint8_t old_move_nb){
                 }
             }
         } else if (tempo < TEMPO_1) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 move = HALF_MOON;
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 move = FULL_MOON;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
@@ -672,11 +676,11 @@ uint8_t choose_move(uint8_t old_move_nb){
                 }
             }
         } else if (tempo < TEMPO_2) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = TURN_AROUND;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 move = DO_NOTHING;
             } else {
                 if (old_move_nb == MOVE_FORWARD){
@@ -686,11 +690,11 @@ uint8_t choose_move(uint8_t old_move_nb){
                 }
             }
         } else if (tempo < TEMPO_3) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 move = TURN_AROUND;
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
                 } else {
@@ -700,11 +704,11 @@ uint8_t choose_move(uint8_t old_move_nb){
                 move = DO_NOTHING;
             }            
         } else if (tempo < TEMPO_4) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 move = TURN_AROUND;
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
                 } else {
@@ -714,29 +718,29 @@ uint8_t choose_move(uint8_t old_move_nb){
                 move = DO_NOTHING;
             }
         } else if (tempo < TEMPO_5) {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
                 } else {
                     move = MOVE_FORWARD;
                 }
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = TURN_AROUND;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 move = FULL_ROTATION;
             } else {
                 move = DO_NOTHING;
             }            
         } else {
-            if (random < 70) {
+            if (random < RAND_HIGH_CHANCES_THRESHOLD) {
                 if (old_move_nb == MOVE_FORWARD){
                     move = MOVE_BACKWARD;
                 } else {
                     move = MOVE_FORWARD;
                 }
-            } else if (random < 90) {
+            } else if (random < RAND_MEDIUM_CHANCES_THRESHOLD) {
                 move = TURN_AROUND;
-            } else if (random < 95) {
+            } else if (random < RAND_LOW_CHANCES_THRESHOLD) {
                 move = DO_NOTHING;
             } else {
                 move = FULL_ROTATION;
